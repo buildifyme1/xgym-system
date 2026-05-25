@@ -1,0 +1,2330 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>X Gym — نظام إدارة الصالة</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Cairo:wght@300;400;600;700;900&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+:root {
+  --primary:#FF3D00; --primary-dark:#BF2900; --primary-glow:rgba(255,61,0,.35);
+  --accent:#FFB300; --accent2:#FF6D00;
+  --bg:#080808; --bg-card:#111; --bg-card2:#181818; --bg-card3:#202020;
+  --text:#F4F4F4; --text-muted:#666; --text-dim:#999;
+  --border:#222; --border2:#2e2e2e;
+  --success:#00E676; --warning:#FFB300; --danger:#FF3D00; --info:#00B0FF; --purple:#9C27B0;
+  --sidebar-w:272px;
+  --radius:14px; --radius-sm:8px; --radius-xs:6px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+
+/* ═══════ SCROLLBAR ═══════ */
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:#333;border-radius:3px;}
+::-webkit-scrollbar-thumb:hover{background:#444;}
+
+/* ═══════ SIDEBAR ═══════ */
+.sidebar{
+  position:fixed;right:0;top:0;bottom:0;width:var(--sidebar-w);
+  background:var(--bg-card);
+  border-left:1px solid var(--border);
+  display:flex;flex-direction:column;z-index:200;
+  overflow-y:auto;overflow-x:hidden;
+}
+.sidebar-logo{
+  padding:24px 20px 18px;border-bottom:1px solid var(--border);
+  text-align:center;position:relative;overflow:hidden;
+}
+.sidebar-logo::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse at center top,rgba(255,61,0,.12) 0%,transparent 70%);
+  pointer-events:none;
+}
+.logo-ring{
+  width:70px;height:70px;border-radius:50%;
+  border:2px solid var(--primary);
+  display:flex;align-items:center;justify-content:center;
+  margin:0 auto 10px;
+  box-shadow:0 0 20px var(--primary-glow),inset 0 0 20px rgba(255,61,0,.05);
+  position:relative;
+}
+.logo-ring::before{
+  content:'';position:absolute;inset:-4px;border-radius:50%;
+  border:1px solid rgba(255,61,0,.2);
+}
+.logo-x{font-family:'Bebas Neue';font-size:42px;color:var(--primary);line-height:1;text-shadow:0 0 20px var(--primary-glow);}
+.logo-name{font-family:'Bebas Neue';font-size:18px;color:var(--text);letter-spacing:4px;}
+.logo-tagline{font-size:10px;color:var(--text-muted);letter-spacing:2px;margin-top:2px;}
+.sidebar-time{
+  padding:10px 16px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:8px;
+}
+.sidebar-clock{font-family:'Rajdhani';font-size:22px;color:var(--primary);font-weight:700;letter-spacing:2px;}
+.sidebar-date-small{font-size:11px;color:var(--text-muted);}
+.nav-group{padding:6px 0;}
+.nav-label{font-size:9px;color:var(--text-muted);padding:10px 20px 4px;letter-spacing:3px;text-transform:uppercase;font-weight:700;}
+.nav-item{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 18px;cursor:pointer;
+  color:var(--text-muted);font-size:13.5px;font-weight:600;
+  transition:all .18s;border-right:3px solid transparent;
+  position:relative;
+}
+.nav-item:hover{color:var(--text);background:rgba(255,61,0,.06);}
+.nav-item.active{color:var(--primary);background:rgba(255,61,0,.1);border-right-color:var(--primary);}
+.nav-item .ni{
+  width:32px;height:32px;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;flex-shrink:0;
+  background:rgba(255,255,255,.04);
+  transition:all .18s;
+}
+.nav-item.active .ni,.nav-item:hover .ni{background:rgba(255,61,0,.15);color:var(--primary);}
+.nav-badge{
+  margin-right:auto;background:var(--primary);color:#fff;
+  font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;
+  animation:pulse-badge 2s infinite;
+}
+@keyframes pulse-badge{0%,100%{box-shadow:0 0 0 0 rgba(255,61,0,.4);}50%{box-shadow:0 0 0 4px rgba(255,61,0,0);}}
+.sidebar-footer{
+  margin-top:auto;padding:14px 16px;border-top:1px solid var(--border);
+  font-size:11px;color:var(--text-muted);text-align:center;
+}
+
+/* ═══════ MAIN ═══════ */
+.main{margin-right:var(--sidebar-w);min-height:100vh;display:flex;flex-direction:column;}
+.topbar{
+  position:sticky;top:0;z-index:100;
+  background:rgba(8,8,8,.9);backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--border);
+  padding:0 28px;height:64px;
+  display:flex;align-items:center;gap:14px;
+}
+.topbar-title{font-family:'Bebas Neue';font-size:22px;color:var(--text);flex:1;letter-spacing:1px;}
+.topbar-search{
+  display:flex;align-items:center;gap:8px;
+  background:var(--bg-card2);border:1px solid var(--border);
+  border-radius:var(--radius-sm);padding:0 12px;
+  transition:border-color .2s;
+}
+.topbar-search:focus-within{border-color:var(--primary);}
+.topbar-search input{
+  background:none;border:none;outline:none;color:var(--text);
+  font-family:'Cairo';font-size:13px;padding:8px 0;width:180px;
+  text-align:right;
+}
+.topbar-search i{color:var(--text-muted);font-size:13px;}
+
+/* ═══════ BUTTONS ═══════ */
+.btn{
+  padding:9px 18px;border-radius:var(--radius-sm);border:none;
+  font-family:'Cairo';font-weight:700;font-size:13px;
+  cursor:pointer;display:inline-flex;align-items:center;gap:7px;
+  transition:all .2s;white-space:nowrap;
+}
+.btn-primary{background:var(--primary);color:#fff;}
+.btn-primary:hover{background:var(--primary-dark);transform:translateY(-1px);box-shadow:0 4px 16px var(--primary-glow);}
+.btn-ghost{background:transparent;color:var(--text-muted);border:1px solid var(--border);}
+.btn-ghost:hover{border-color:var(--primary);color:var(--primary);}
+.btn-success{background:var(--success);color:#000;}
+.btn-success:hover{filter:brightness(1.1);}
+.btn-warning{background:var(--warning);color:#000;}
+.btn-danger{background:var(--danger);color:#fff;}
+.btn-danger:hover{background:#d32f2f;}
+.btn-info{background:var(--info);color:#000;}
+.btn-purple{background:var(--purple);color:#fff;}
+.btn-sm{padding:6px 13px;font-size:12px;}
+.btn-xs{padding:4px 10px;font-size:11px;}
+.btn-icon{padding:7px 9px;}
+.btn-block{width:100%;}
+
+/* ═══════ PAGE ═══════ */
+.page{display:none;padding:24px 28px;animation:fadeIn .25s ease;}
+.page.active{display:block;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* ═══════ STAT CARDS ═══════ */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px;}
+.stat-card{
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:var(--radius);padding:18px 20px;
+  position:relative;overflow:hidden;cursor:default;
+  transition:transform .2s,border-color .2s,box-shadow .2s;
+}
+.stat-card:hover{transform:translateY(-3px);border-color:var(--primary);box-shadow:0 8px 32px rgba(0,0,0,.3);}
+.stat-card .glow-line{position:absolute;top:0;left:0;right:0;height:2px;}
+.stat-card.c-red .glow-line{background:linear-gradient(90deg,transparent,var(--primary),transparent);}
+.stat-card.c-gold .glow-line{background:linear-gradient(90deg,transparent,var(--accent),transparent);}
+.stat-card.c-green .glow-line{background:linear-gradient(90deg,transparent,var(--success),transparent);}
+.stat-card.c-blue .glow-line{background:linear-gradient(90deg,transparent,var(--info),transparent);}
+.stat-card.c-purple .glow-line{background:linear-gradient(90deg,transparent,var(--purple),transparent);}
+.stat-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;}
+.stat-icon{
+  width:44px;height:44px;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;font-size:18px;
+}
+.stat-icon.c-red{background:rgba(255,61,0,.12);color:var(--primary);}
+.stat-icon.c-gold{background:rgba(255,179,0,.12);color:var(--accent);}
+.stat-icon.c-green{background:rgba(0,230,118,.12);color:var(--success);}
+.stat-icon.c-blue{background:rgba(0,176,255,.12);color:var(--info);}
+.stat-icon.c-purple{background:rgba(156,39,176,.12);color:var(--purple);}
+.stat-trend{font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px;}
+.stat-trend.up{background:rgba(0,230,118,.12);color:var(--success);}
+.stat-trend.down{background:rgba(255,61,0,.12);color:var(--danger);}
+.stat-value{font-family:'Bebas Neue';font-size:40px;color:var(--text);line-height:1;}
+.stat-label{font-size:12px;color:var(--text-muted);margin-top:3px;}
+.stat-sub{font-size:11px;color:var(--text-muted);margin-top:8px;padding-top:8px;border-top:1px solid var(--border);}
+
+/* ═══════ CARD ═══════ */
+.card{
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:var(--radius);overflow:hidden;margin-bottom:20px;
+}
+.card-header{
+  padding:14px 18px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:10px;
+  background:rgba(255,255,255,.01);
+}
+.card-title{font-weight:700;font-size:15px;flex:1;}
+.card-body{padding:18px;}
+
+/* ═══════ TABLE ═══════ */
+.tbl-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;}
+th{
+  text-align:right;padding:9px 14px;
+  font-size:10.5px;font-weight:700;color:var(--text-muted);
+  text-transform:uppercase;letter-spacing:1px;
+  border-bottom:1px solid var(--border);
+  background:rgba(255,255,255,.015);white-space:nowrap;
+}
+td{
+  padding:11px 14px;font-size:13px;
+  border-bottom:1px solid rgba(255,255,255,.03);
+  vertical-align:middle;
+}
+tr:last-child td{border-bottom:none;}
+tbody tr{transition:background .15s;}
+tbody tr:hover td{background:rgba(255,61,0,.03);}
+.empty-row{text-align:center;color:var(--text-muted);padding:32px 14px !important;}
+
+/* ═══════ AVATAR ═══════ */
+.avatar{
+  width:36px;height:36px;border-radius:50%;
+  display:inline-flex;align-items:center;justify-content:center;
+  font-weight:700;font-size:13px;flex-shrink:0;
+  background:linear-gradient(135deg,var(--primary),var(--accent2));
+  color:#fff;
+}
+.avatar-lg{width:48px;height:48px;font-size:18px;}
+.td-member{display:flex;align-items:center;gap:10px;}
+.td-name{font-weight:600;}
+.td-sub{font-size:11px;color:var(--text-muted);}
+
+/* ═══════ BADGES ═══════ */
+.badge{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;}
+.badge-active{background:rgba(0,230,118,.1);color:var(--success);}
+.badge-expired{background:rgba(255,61,0,.1);color:var(--danger);}
+.badge-expiring{background:rgba(255,179,0,.1);color:var(--warning);}
+.badge-info{background:rgba(0,176,255,.1);color:var(--info);}
+.badge-present{background:rgba(0,230,118,.1);color:var(--success);}
+.badge-absent{background:rgba(255,61,0,.1);color:var(--danger);}
+.badge-male{background:rgba(0,176,255,.1);color:var(--info);}
+.badge-female{background:rgba(255,61,164,.1);color:#ff61a4;}
+
+/* ═══════ INPUTS ═══════ */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.form-group{display:flex;flex-direction:column;gap:5px;}
+.form-group.full{grid-column:1/-1;}
+.form-group label{font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;}
+.form-group input,.form-group select,.form-group textarea{
+  background:var(--bg-card2);border:1px solid var(--border);
+  color:var(--text);font-family:'Cairo';font-size:13.5px;
+  padding:9px 13px;border-radius:var(--radius-sm);outline:none;
+  transition:border-color .2s,box-shadow .2s;text-align:right;
+}
+.form-group input:focus,.form-group select:focus{
+  border-color:var(--primary);
+  box-shadow:0 0 0 3px rgba(255,61,0,.1);
+}
+.form-group select option{background:var(--bg-card2);}
+.search-bar{
+  display:flex;align-items:center;gap:9px;
+  background:var(--bg-card2);border:1px solid var(--border);
+  border-radius:var(--radius-sm);padding:0 14px;
+  transition:border-color .2s;
+}
+.search-bar:focus-within{border-color:var(--primary);}
+.search-bar input{
+  flex:1;background:none;border:none;outline:none;
+  color:var(--text);font-family:'Cairo';font-size:13px;
+  padding:9px 0;text-align:right;
+}
+.search-bar i{color:var(--text-muted);}
+.filter-row{display:flex;gap:10px;margin-bottom:16px;align-items:center;flex-wrap:wrap;}
+.filter-select{
+  background:var(--bg-card2);border:1px solid var(--border);
+  color:var(--text);font-family:'Cairo';font-size:12px;
+  padding:8px 13px;border-radius:var(--radius-sm);outline:none;cursor:pointer;
+}
+
+/* ═══════ MODAL ═══════ */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.85);
+  backdrop-filter:blur(6px);z-index:900;
+  display:none;align-items:center;justify-content:center;padding:20px;
+}
+.modal-overlay.open{display:flex;}
+.modal{
+  background:var(--bg-card);border:1px solid var(--border2);
+  border-radius:18px;padding:26px;
+  width:100%;max-width:560px;
+  animation:modalIn .28s cubic-bezier(.34,1.56,.64,1);
+  max-height:90vh;overflow-y:auto;
+  box-shadow:0 24px 80px rgba(0,0,0,.6);
+}
+.modal-lg{max-width:820px;}
+.modal-xl{max-width:960px;}
+@keyframes modalIn{from{transform:scale(.9) translateY(20px);opacity:0}to{transform:scale(1) translateY(0);opacity:1}}
+.modal-header{display:flex;align-items:center;gap:12px;margin-bottom:22px;}
+.modal-icon{
+  width:44px;height:44px;border-radius:12px;
+  display:flex;align-items:center;justify-content:center;font-size:20px;
+  background:rgba(255,61,0,.12);color:var(--primary);flex-shrink:0;
+}
+.modal-title{font-size:17px;font-weight:700;flex:1;}
+.modal-close{background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:18px;padding:4px;transition:color .2s;}
+.modal-close:hover{color:var(--danger);}
+.modal-footer{display:flex;gap:10px;margin-top:22px;justify-content:flex-end;}
+.divider{height:1px;background:var(--border);margin:16px 0;}
+
+/* ═══════ PROGRESS ═══════ */
+.progress{height:5px;background:var(--border2);border-radius:3px;overflow:hidden;}
+.progress-fill{height:100%;border-radius:3px;transition:width .5s;}
+.progress-fill.c-green{background:var(--success);}
+.progress-fill.c-gold{background:var(--accent);}
+.progress-fill.c-red{background:var(--danger);}
+
+/* ═══════ MEMBER CARD (ID CARD) ═══════ */
+.id-card{
+  width:340px;height:200px;border-radius:16px;
+  position:relative;overflow:hidden;flex-shrink:0;
+  background:linear-gradient(135deg,#100000 0%,#1a0800 40%,#0f0f0f 100%);
+  border:1px solid rgba(255,61,0,.4);
+  box-shadow:0 8px 40px rgba(255,61,0,.15);
+}
+.id-card-back{
+  width:340px;border-radius:16px;padding:16px;
+  background:linear-gradient(135deg,#0f0f0f,#1a0800,#100000);
+  border:1px solid rgba(255,61,0,.3);
+  box-shadow:0 8px 40px rgba(255,61,0,.1);
+  margin-top:12px;
+}
+.id-card::before{
+  content:'X';font-family:'Bebas Neue';font-size:220px;
+  color:rgba(255,61,0,.05);
+  position:absolute;top:-40px;left:-20px;line-height:1;
+  pointer-events:none;
+}
+.id-card::after{
+  content:'';position:absolute;
+  top:-50%;right:-50%;width:100%;height:200%;
+  background:linear-gradient(transparent,rgba(255,61,0,.03),transparent);
+  transform:rotate(-30deg);pointer-events:none;
+}
+.id-card-inner{position:relative;z-index:1;padding:16px;height:100%;display:flex;flex-direction:column;}
+.id-top{display:flex;justify-content:space-between;align-items:flex-start;}
+.id-gym-name{font-family:'Bebas Neue';font-size:28px;color:var(--primary);text-shadow:0 0 10px rgba(255,61,0,.4);line-height:1;}
+.id-gym-sub{font-size:8px;color:rgba(255,255,255,.4);letter-spacing:2px;}
+.id-num{font-family:'Rajdhani';font-size:12px;color:var(--primary);font-weight:700;text-align:left;}
+.id-mid{flex:1;display:flex;align-items:center;gap:10px;margin-top:8px;}
+.id-avatar{
+  width:46px;height:46px;border-radius:50%;
+  background:linear-gradient(135deg,var(--primary),var(--accent2));
+  display:flex;align-items:center;justify-content:center;
+  font-weight:900;font-size:18px;color:#fff;flex-shrink:0;
+  border:2px solid rgba(255,61,0,.4);
+}
+.id-name{font-size:15px;font-weight:700;color:#fff;}
+.id-phone{font-size:10px;color:rgba(255,255,255,.5);margin-top:2px;}
+.id-chips{display:flex;gap:6px;margin-top:4px;}
+.id-chip{font-size:9px;padding:2px 7px;border-radius:20px;background:rgba(255,255,255,.08);color:rgba(255,255,255,.6);}
+.id-bottom{display:flex;justify-content:space-between;align-items:flex-end;margin-top:auto;}
+.id-info-label{font-size:8px;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:1px;}
+.id-info-val{font-size:11px;color:rgba(255,255,255,.8);font-weight:600;}
+.id-barcode-wrap{text-align:center;}
+.id-barcode-num{font-family:'Rajdhani';font-size:9px;color:rgba(255,255,255,.3);letter-spacing:1px;margin-top:2px;}
+.id-stripe{height:2px;background:linear-gradient(90deg,transparent,var(--primary),transparent);margin:6px 0;}
+
+/* ═══════ ATTENDANCE GRID ═══════ */
+.att-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;}
+.att-card{
+  background:var(--bg-card2);border:1px solid var(--border);
+  border-radius:10px;padding:12px;
+  display:flex;align-items:center;gap:10px;
+  cursor:pointer;transition:all .18s;
+  user-select:none;
+}
+.att-card:hover{border-color:rgba(255,61,0,.3);}
+.att-card.in{border-color:var(--success);background:rgba(0,230,118,.04);}
+.att-card.absent-mark{border-color:var(--danger);background:rgba(255,61,0,.04);}
+.att-card .att-info{flex:1;min-width:0;}
+.att-card .att-name{font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.att-card .att-id{font-size:10px;color:var(--text-muted);}
+.att-card .att-plan{font-size:10px;color:var(--text-dim);}
+.att-check{font-size:22px;flex-shrink:0;}
+
+/* ═══════ WHATSAPP ═══════ */
+.wa-item{
+  display:flex;align-items:center;gap:12px;
+  padding:12px 18px;border-bottom:1px solid rgba(255,255,255,.03);
+  transition:background .15s;
+}
+.wa-item:hover{background:rgba(255,255,255,.02);}
+.wa-item:last-child{border-bottom:none;}
+.wa-avatar{
+  width:42px;height:42px;border-radius:50%;
+  background:linear-gradient(135deg,var(--primary),var(--accent2));
+  display:flex;align-items:center;justify-content:center;
+  font-weight:900;font-size:16px;color:#fff;flex-shrink:0;
+}
+.wa-info{flex:1;}
+.wa-name{font-weight:700;font-size:14px;}
+.wa-detail{font-size:11px;color:var(--text-muted);margin-top:2px;}
+.wa-status{font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;}
+.wa-status.expiring{background:rgba(255,179,0,.12);color:var(--warning);}
+.wa-status.expired{background:rgba(255,61,0,.12);color:var(--danger);}
+
+/* ═══════ CHARTS ═══════ */
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:20px;}
+.chart-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:18px;}
+.chart-title{font-weight:700;font-size:14px;color:var(--text-dim);margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.chart-title i{font-size:16px;}
+
+/* ═══════ MINI CALENDAR ═══════ */
+.mini-cal{background:var(--bg-card2);border-radius:10px;padding:14px;}
+.cal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+.cal-month{font-weight:700;font-size:14px;}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;}
+.cal-day-label{font-size:9px;color:var(--text-muted);padding:4px 0;font-weight:700;}
+.cal-day{
+  font-size:11px;padding:5px 2px;border-radius:6px;cursor:pointer;
+  transition:all .15s;color:var(--text-dim);
+}
+.cal-day:hover{background:rgba(255,61,0,.1);color:var(--primary);}
+.cal-day.today{background:var(--primary);color:#fff;font-weight:700;}
+.cal-day.has-att{background:rgba(0,230,118,.1);color:var(--success);}
+.cal-day.other-month{color:var(--border2);}
+
+/* ═══════ TOAST ═══════ */
+.toast{
+  position:fixed;bottom:24px;left:24px;
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:12px;padding:12px 18px;
+  display:flex;align-items:center;gap:10px;
+  font-size:13px;font-weight:600;
+  box-shadow:0 8px 40px rgba(0,0,0,.6);
+  z-index:9999;transform:translateY(80px);opacity:0;
+  transition:all .3s cubic-bezier(.34,1.56,.64,1);
+  max-width:320px;
+}
+.toast.show{transform:translateY(0);opacity:1;}
+.toast.t-success{border-color:var(--success);}
+.toast.t-error{border-color:var(--danger);}
+.toast.t-info{border-color:var(--info);}
+.toast.t-warning{border-color:var(--warning);}
+.toast i{font-size:16px;}
+.toast.t-success i{color:var(--success);}
+.toast.t-error i{color:var(--danger);}
+.toast.t-info i{color:var(--info);}
+.toast.t-warning i{color:var(--warning);}
+
+/* ═══════ CONFIRM DIALOG ═══════ */
+.confirm-box{
+  background:var(--bg-card);border:1px solid var(--border2);
+  border-radius:16px;padding:28px;max-width:400px;width:90%;
+  animation:modalIn .25s ease;text-align:center;
+}
+.confirm-icon{font-size:48px;margin-bottom:12px;}
+.confirm-title{font-size:17px;font-weight:700;margin-bottom:8px;}
+.confirm-msg{font-size:13px;color:var(--text-muted);margin-bottom:22px;}
+.confirm-btns{display:flex;gap:10px;justify-content:center;}
+
+/* ═══════ TABS ═══════ */
+.tabs{display:flex;gap:4px;background:var(--bg-card2);border-radius:10px;padding:4px;margin-bottom:18px;}
+.tab{
+  flex:1;padding:8px;text-align:center;font-size:13px;font-weight:700;
+  border-radius:7px;cursor:pointer;color:var(--text-muted);transition:all .2s;
+}
+.tab.active{background:var(--primary);color:#fff;box-shadow:0 2px 8px var(--primary-glow);}
+.tab-panel{display:none;}
+.tab-panel.active{display:block;}
+
+/* ═══════ SCAN INPUT — USB Scanner ready ═══════ */
+.scan-box{
+  display:flex;gap:10px;align-items:center;
+  background:var(--bg-card2);border:2px solid var(--success);
+  border-radius:12px;padding:10px 16px;margin-bottom:18px;
+  transition:border-color .2s;
+  box-shadow:0 0 0 3px rgba(0,230,118,.08);
+}
+.scan-box:focus-within{border-color:var(--success);box-shadow:0 0 0 4px rgba(0,230,118,.18);}
+.scan-box input{
+  flex:1;background:none;border:none;outline:none;
+  color:var(--text);font-family:'Rajdhani';font-size:20px;font-weight:700;
+  text-align:center;letter-spacing:4px;
+}
+.scan-box i{color:var(--success);font-size:20px;}
+
+/* ═══════ CAMERA QR ═══════ */
+.cam-wrap{
+  position:relative;width:100%;max-width:400px;margin:0 auto;
+  border-radius:16px;overflow:hidden;
+  border:2px solid var(--border);
+  background:#000;aspect-ratio:1/1;
+}
+.cam-wrap video{width:100%;height:100%;object-fit:cover;display:block;}
+.cam-overlay{
+  position:absolute;inset:0;pointer-events:none;
+  display:flex;align-items:center;justify-content:center;
+}
+.cam-frame{
+  width:60%;height:60%;
+  border:2px solid var(--primary);border-radius:12px;
+  box-shadow:0 0 0 2000px rgba(0,0,0,.5);
+  position:relative;
+}
+.cam-frame::before,.cam-frame::after{
+  content:'';position:absolute;width:20px;height:20px;
+  border-color:var(--primary);border-style:solid;
+}
+.cam-frame::before{top:-2px;right:-2px;border-width:3px 3px 0 0;border-radius:0 6px 0 0;}
+.cam-frame::after{bottom:-2px;left:-2px;border-width:0 0 3px 3px;border-radius:0 0 0 6px;}
+.cam-line{
+  position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--primary),transparent);
+  animation:scan-line 2s linear infinite;
+}
+@keyframes scan-line{0%{top:0;}100%{top:100%;}}
+.cam-status{
+  position:absolute;bottom:10px;left:50%;transform:translateX(-50%);
+  background:rgba(0,0,0,.75);color:#fff;
+  padding:5px 14px;border-radius:20px;font-size:11px;font-weight:700;
+  white-space:nowrap;backdrop-filter:blur(4px);
+}
+.cam-status.scanning{color:var(--primary);}
+.cam-status.found{color:var(--success);}
+
+/* ═══════ ID CARD v3 — FRONT ONLY ═══════ */
+.id-card{
+  width:360px;height:220px;border-radius:20px;
+  position:relative;overflow:hidden;flex-shrink:0;
+  background:linear-gradient(135deg,#120000 0%,#1e0600 40%,#0d0d0d 100%);
+  border:1px solid rgba(255,61,0,.5);
+  box-shadow:0 12px 50px rgba(255,61,0,.22),0 0 0 1px rgba(255,255,255,.04);
+  transition:box-shadow .3s;
+}
+.card-container{
+  perspective:900px;display:inline-block;width:360px;
+}
+.card-container:hover .id-card{box-shadow:0 20px 60px rgba(255,61,0,.35),0 0 0 1px rgba(255,255,255,.06);}
+.id-card .shimmer{
+  position:absolute;inset:0;
+  background:linear-gradient(105deg,transparent 30%,rgba(255,255,255,.045) 50%,transparent 70%);
+  background-size:200% 100%;
+  animation:shimmer 4s ease infinite;
+  pointer-events:none;z-index:2;
+}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.id-card .chip-icon{
+  position:absolute;top:52px;right:14px;
+  width:28px;height:22px;
+  background:linear-gradient(135deg,#c8a000,#ffe066,#c8a000);
+  border-radius:4px;opacity:.65;z-index:3;
+}
+.id-card::before{
+  content:'X';font-family:'Bebas Neue';font-size:260px;
+  color:rgba(255,61,0,.04);
+  position:absolute;top:-55px;left:-35px;line-height:1;
+  pointer-events:none;z-index:1;
+}
+.id-card-inner{position:relative;z-index:4;padding:14px 16px;height:100%;display:flex;flex-direction:column;}
+.id-top{display:flex;justify-content:space-between;align-items:flex-start;}
+.id-gym-name{font-family:'Bebas Neue';font-size:30px;color:var(--primary);text-shadow:0 0 14px rgba(255,61,0,.5);line-height:1;}
+.id-gym-sub{font-size:8px;color:rgba(255,255,255,.3);letter-spacing:2px;}
+.id-num{font-family:'Rajdhani';font-size:12px;color:var(--primary);font-weight:700;text-align:left;}
+.id-mid{flex:1;display:flex;align-items:center;gap:10px;margin-top:5px;}
+.id-avatar{
+  width:48px;height:48px;border-radius:50%;
+  background:linear-gradient(135deg,var(--primary),var(--accent2));
+  display:flex;align-items:center;justify-content:center;
+  font-weight:900;font-size:18px;color:#fff;flex-shrink:0;
+  border:2px solid rgba(255,61,0,.5);
+  box-shadow:0 0 12px rgba(255,61,0,.3);
+}
+.id-name{font-size:14px;font-weight:800;color:#fff;}
+.id-phone{font-size:10px;color:rgba(255,255,255,.4);margin-top:2px;}
+.id-chips{display:flex;gap:5px;margin-top:5px;flex-wrap:wrap;}
+.id-chip{font-size:9px;padding:2px 8px;border-radius:20px;background:rgba(255,255,255,.07);color:rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.05);}
+.id-chip.active-chip{background:rgba(0,230,118,.12);color:var(--success);border-color:rgba(0,230,118,.2);}
+.id-chip.warn-chip{background:rgba(255,179,0,.12);color:var(--warning);border-color:rgba(255,179,0,.2);}
+.id-chip.danger-chip{background:rgba(255,61,0,.15);color:var(--danger);border-color:rgba(255,61,0,.25);}
+
+/* Bottom: info + big QR */
+.id-bottom{display:flex;align-items:flex-end;margin-top:auto;gap:8px;}
+.id-bottom-info{flex:1;display:flex;gap:16px;}
+.id-info-label{font-size:7.5px;color:rgba(255,255,255,.28);text-transform:uppercase;letter-spacing:1.5px;}
+.id-info-val{font-size:11px;color:rgba(255,255,255,.85);font-weight:700;}
+.id-stripe{height:2px;background:linear-gradient(90deg,transparent,var(--primary),transparent);margin:5px 0;}
+.id-barcode-wrap{text-align:center;flex-shrink:0;}
+.id-barcode-num{font-family:'Rajdhani';font-size:8px;color:rgba(255,255,255,.22);letter-spacing:1px;margin-top:1px;}
+
+/* QR big in card */
+.id-qr-box{
+  width:84px;height:84px;
+  background:#ffffff;
+  border-radius:6px;padding:4px;
+  border:1px solid rgba(0,0,0,0.15);
+  /* NO shadow/blur/glow on QR — keeps it clean for scanners */
+}
+
+/* QR canvas/img must stay sharp — no scaling artifacts */
+canvas,
+#card-qr canvas,
+#card-qr img,
+[id^="qr-list-"] canvas,
+[id^="qr-list-"] img {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  display:block !important;
+  /* never shrink below generated size */
+}
+
+/* Card status bar */
+.id-status-bar{
+  position:absolute;top:0;left:0;right:0;height:3px;z-index:5;
+}
+.id-status-bar.active{background:linear-gradient(90deg,transparent,var(--success),transparent);}
+.id-status-bar.expiring{background:linear-gradient(90deg,transparent,var(--warning),transparent);}
+.id-status-bar.expired{background:linear-gradient(90deg,transparent,var(--danger),transparent);}
+
+/* Cards grid */
+.cards-grid-wrap{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:22px;}
+.card-item-wrap{cursor:pointer;transition:transform .2s;}
+.card-item-wrap:hover{transform:translateY(-4px);}
+.card-actions{
+  display:flex;gap:8px;padding:10px 14px;
+  background:var(--bg-card2);border-radius:0 0 14px 14px;
+  border:1px solid var(--border);border-top:none;
+  margin-top:-4px;
+}
+.card-stat{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-muted);}
+.card-stat i{font-size:10px;}
+
+/* ═══════ REPORT PRINT ═══════ */
+@media print{
+  .sidebar,.topbar,.no-print{display:none !important;}
+  .main{margin-right:0 !important;}
+  body{background:#fff !important;color:#000 !important;}
+  .id-card,.id-card-back{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  .page{display:block !important;padding:0 !important;}
+}
+
+/* ═══════ RESPONSIVE ═══════ */
+@media(max-width:900px){
+  :root{--sidebar-w:0px;}
+  .sidebar{transform:translateX(100%);transition:transform .3s;}
+  .sidebar.open{transform:translateX(0);width:272px;}
+  .main{margin-right:0;}
+  .stats-grid{grid-template-columns:repeat(2,1fr);}
+  .charts-grid{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<!-- ════════════════ SIDEBAR ════════════════ -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-ring"><span class="logo-x">X</span></div>
+    <div class="logo-name">GYM</div>
+    <div class="logo-tagline">FITNESS MANAGEMENT SYSTEM</div>
+  </div>
+  <div class="sidebar-time">
+    <i class="fas fa-clock" style="color:var(--primary);font-size:14px"></i>
+    <div>
+      <div class="sidebar-clock" id="live-clock">--:--:--</div>
+      <div class="sidebar-date-small" id="live-date">جاري التحميل...</div>
+    </div>
+  </div>
+
+  <nav>
+    <div class="nav-group">
+      <div class="nav-label">الرئيسية</div>
+      <div class="nav-item active" id="nav-dashboard" onclick="goto('dashboard',this)">
+        <div class="ni"><i class="fas fa-gauge-high"></i></div> لوحة التحكم
+      </div>
+    </div>
+    <div class="nav-group">
+      <div class="nav-label">إدارة الأعضاء</div>
+      <div class="nav-item" id="nav-members" onclick="goto('members',this)">
+        <div class="ni"><i class="fas fa-users"></i></div> الأعضاء
+      </div>
+      <div class="nav-item" id="nav-attendance" onclick="goto('attendance',this)">
+        <div class="ni"><i class="fas fa-fingerprint"></i></div> الحضور والغياب
+      </div>
+      <div class="nav-item" id="nav-cards" onclick="goto('cards',this)">
+        <div class="ni"><i class="fas fa-id-card"></i></div> بطاقات الأعضاء
+      </div>
+    </div>
+    <div class="nav-group">
+      <div class="nav-label">الاشتراكات والمالية</div>
+      <div class="nav-item" id="nav-subscriptions" onclick="goto('subscriptions',this)">
+        <div class="ni"><i class="fas fa-credit-card"></i></div> الاشتراكات
+      </div>
+      <div class="nav-item" id="nav-payments" onclick="goto('payments',this)">
+        <div class="ni"><i class="fas fa-money-bill-wave"></i></div> المدفوعات
+      </div>
+      <div class="nav-item" id="nav-reports" onclick="goto('reports',this)">
+        <div class="ni"><i class="fas fa-chart-bar"></i></div> التقارير
+      </div>
+    </div>
+    <div class="nav-group">
+      <div class="nav-label">التنبيهات</div>
+      <div class="nav-item" id="nav-whatsapp" onclick="goto('whatsapp',this)">
+        <div class="ni"><i class="fab fa-whatsapp"></i></div> تنبيهات واتساب
+        <span class="nav-badge" id="wa-badge">0</span>
+      </div>
+    </div>
+    <div class="nav-group">
+      <div class="nav-label">الإعدادات</div>
+      <div class="nav-item" id="nav-settings" onclick="goto('settings',this)">
+        <div class="ni"><i class="fas fa-gear"></i></div> الإعدادات
+      </div>
+    </div>
+  </nav>
+
+  <div class="sidebar-footer">
+    <i class="fas fa-shield-halved" style="color:var(--primary)"></i>
+    X Gym © 2025 — v2.0
+  </div>
+</aside>
+
+<!-- ════════════════ MAIN ════════════════ -->
+<main class="main">
+  <header class="topbar">
+    <button class="btn btn-ghost btn-icon no-print" style="display:none" id="menu-btn" onclick="document.getElementById('sidebar').classList.toggle('open')">
+      <i class="fas fa-bars"></i>
+    </button>
+    <span class="topbar-title" id="page-title">لوحة التحكم</span>
+    <div class="topbar-search">
+      <i class="fas fa-search"></i>
+      <input type="text" id="global-search" placeholder="بحث سريع..." oninput="globalSearch(this.value)">
+    </div>
+    <button class="btn btn-ghost btn-sm no-print" onclick="goto('reports',document.getElementById('nav-reports'))"><i class="fas fa-print"></i></button>
+    <button class="btn btn-primary no-print" onclick="openAddMember()"><i class="fas fa-user-plus"></i> عضو جديد</button>
+  </header>
+
+  <!-- ══ DASHBOARD ══ -->
+  <div class="page active" id="page-dashboard">
+    <div class="stats-grid" id="dash-stats"></div>
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="chart-title"><i class="fas fa-chart-bar" style="color:var(--primary)"></i> الأعضاء الجدد — هذا العام</div>
+        <canvas id="chart-monthly" height="180"></canvas>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title"><i class="fas fa-chart-pie" style="color:var(--accent)"></i> توزيع خطط الاشتراك</div>
+        <canvas id="chart-plans" height="180"></canvas>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:2fr 1fr;gap:18px">
+      <div class="card">
+        <div class="card-header">
+          <i class="fas fa-triangle-exclamation" style="color:var(--warning);font-size:18px"></i>
+          <span class="card-title">اشتراكات تنتهي قريباً أو منتهية</span>
+          <button class="btn btn-ghost btn-sm no-print" onclick="goto('whatsapp',document.getElementById('nav-whatsapp'))"><i class="fab fa-whatsapp"></i> إرسال الكل</button>
+        </div>
+        <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>العضو</th><th>الهاتف</th><th>الانتهاء</th><th>المتبقي</th><th>إجراء</th></tr></thead>
+          <tbody id="dash-expiring"></tbody>
+        </table>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><i class="fas fa-calendar" style="color:var(--info)"></i><span class="card-title">التقويم</span></div>
+        <div class="card-body" style="padding:12px">
+          <div class="mini-cal" id="mini-cal"></div>
+          <div style="margin-top:12px">
+            <div style="font-size:12px;font-weight:700;color:var(--text-muted);margin-bottom:8px">حضور اليوم</div>
+            <div id="today-att-count" style="font-family:'Bebas Neue';font-size:32px;color:var(--success)">0</div>
+            <div style="font-size:11px;color:var(--text-muted)">عضو حضر اليوم</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ MEMBERS ══ -->
+  <div class="page" id="page-members">
+    <div class="filter-row">
+      <div class="search-bar" style="flex:1">
+        <i class="fas fa-search"></i>
+        <input type="text" id="member-q" placeholder="ابحث بالاسم أو الهاتف أو ID..." oninput="renderMembers()">
+      </div>
+      <select class="filter-select" id="member-filter" onchange="renderMembers()">
+        <option value="">كل الحالات</option>
+        <option value="active">نشط</option>
+        <option value="expiring">ينتهي قريباً</option>
+        <option value="expired">منتهي</option>
+      </select>
+      <select class="filter-select" id="gender-filter" onchange="renderMembers()">
+        <option value="">كل الجنسين</option>
+        <option value="ذكر">ذكور</option>
+        <option value="أنثى">إناث</option>
+      </select>
+      <select class="filter-select" id="plan-filter" onchange="renderMembers()">
+        <option value="">كل الخطط</option>
+        <option value="شهري">شهري</option>
+        <option value="ثلاثة أشهر">3 أشهر</option>
+        <option value="ستة أشهر">6 أشهر</option>
+        <option value="سنوي">سنوي</option>
+      </select>
+      <button class="btn btn-ghost btn-sm no-print" onclick="exportMembersCSV()"><i class="fas fa-download"></i> تصدير</button>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <i class="fas fa-users" style="color:var(--primary)"></i>
+        <span class="card-title">قائمة الأعضاء</span>
+        <span id="members-count" style="font-size:12px;color:var(--text-muted)"></span>
+        <button class="btn btn-primary btn-sm no-print" onclick="openAddMember()"><i class="fas fa-plus"></i> إضافة</button>
+      </div>
+      <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>ID</th><th>العضو</th><th>الهاتف</th><th>الخطة</th><th>الانتهاء</th><th>الحضور</th><th>الحالة</th><th>إجراءات</th></tr></thead>
+        <tbody id="members-tbody"></tbody>
+      </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ ATTENDANCE ══ -->
+  <div class="page" id="page-attendance">
+    <div class="tabs" id="att-tabs">
+      <div class="tab active" onclick="switchAttTab('today',this)">حضور اليوم</div>
+      <div class="tab" onclick="switchAttTab('scan',this)">مسح الباركود</div>
+      <div class="tab" onclick="switchAttTab('history',this)">السجل الكامل</div>
+      <div class="tab" onclick="switchAttTab('report',this)">تقرير الغياب</div>
+    </div>
+
+    <div class="tab-panel active" id="att-today">
+      <div class="filter-row">
+        <div class="search-bar" style="flex:1">
+          <i class="fas fa-search"></i>
+          <input type="text" id="att-q" placeholder="ابحث باسم أو ID..." oninput="renderAttGrid()">
+        </div>
+        <div id="att-summary" style="font-size:13px;color:var(--text-muted)"></div>
+        <button class="btn btn-ghost btn-sm no-print" onclick="exportAttendance()"><i class="fas fa-download"></i> تصدير اليوم</button>
+      </div>
+      <div class="att-grid" id="att-grid"></div>
+    </div>
+
+    <div class="tab-panel" id="att-scan">
+      <div style="max-width:460px;margin:0 auto;padding:16px 0">
+
+        <!-- Camera Scanner -->
+        <div class="cam-wrap" id="cam-wrap" style="display:none">
+          <video id="cam-video" playsinline autoplay muted></video>
+          <canvas id="cam-canvas" style="display:none"></canvas>
+          <div class="cam-overlay">
+            <div class="cam-frame"><div class="cam-line"></div></div>
+          </div>
+          <div class="cam-status scanning" id="cam-status">جاري البحث عن QR Code…</div>
+        </div>
+
+        <!-- Start cam placeholder -->
+        <div id="cam-placeholder" style="text-align:center;padding:20px 0">
+          <div style="width:100%;aspect-ratio:1/1;max-width:400px;margin:0 auto 18px;
+            background:var(--bg-card2);border:2px dashed var(--border);border-radius:16px;
+            display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;">
+            <i class="fas fa-camera" style="font-size:52px;color:var(--primary);text-shadow:0 0 20px var(--primary-glow)"></i>
+            <div style="font-size:14px;font-weight:700">كاميرا المسح</div>
+            <div style="font-size:12px;color:var(--text-muted)">اضغط لتشغيل الكاميرا ومسح بطاقة العضو</div>
+          </div>
+          <button class="btn btn-primary" style="margin-bottom:12px;padding:12px 32px;font-size:15px" onclick="startCamera()">
+            <i class="fas fa-camera"></i> تشغيل الكاميرا
+          </button>
+        </div>
+
+        <!-- Camera controls -->
+        <div id="cam-controls" style="display:none;text-align:center;margin-bottom:16px">
+          <button class="btn btn-danger btn-sm" onclick="stopCamera()"><i class="fas fa-stop-circle"></i> إيقاف الكاميرا</button>
+        </div>
+
+        <!-- Divider -->
+        <div style="display:flex;align-items:center;gap:10px;margin:18px 0">
+          <div style="flex:1;height:1px;background:var(--border)"></div>
+          <span style="font-size:11px;color:var(--text-muted);font-weight:700">أو QR Scanner USB / إدخال يدوي</span>
+          <div style="flex:1;height:1px;background:var(--border)"></div>
+        </div>
+
+        <!-- USB Scanner hint -->
+        <div style="background:rgba(0,230,118,.06);border:1px solid rgba(0,230,118,.2);border-radius:10px;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px">
+          <i class="fas fa-barcode-read" style="color:var(--success);font-size:20px;flex-shrink:0"></i>
+          <div>
+            <div style="font-size:12px;font-weight:700;color:var(--success)">USB QR Scanner جاهز ✓</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:2px">وجّه الجهاز على كود القرن — سيُسجَّل الحضور تلقائياً فور القراءة</div>
+          </div>
+        </div>
+
+        <div class="scan-box" id="scan-box-wrap">
+          <i class="fas fa-qrcode"></i>
+          <input type="text" id="scan-input" placeholder="XG-XXXXX" autocomplete="off" autocorrect="off" spellcheck="false"
+            onkeydown="if(event.key==='Enter'){event.preventDefault();doScan();}"
+            oninput="autoScanIfComplete(this.value)">
+          <button class="btn btn-success btn-sm" onclick="doScan()"><i class="fas fa-check"></i></button>
+        </div>
+        <div id="scan-result" style="margin-top:16px"></div>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="att-history">
+      <div class="filter-row">
+        <input type="date" class="filter-select" id="att-hist-date" onchange="renderAttHistory()">
+        <select class="filter-select" id="att-hist-filter" onchange="renderAttHistory()">
+          <option value="">كل السجلات</option>
+          <option value="present">حاضر</option>
+        </select>
+      </div>
+      <div class="card">
+        <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>ID</th><th>العضو</th><th>الخطة</th><th>التاريخ</th><th>وقت الدخول</th><th>الحالة</th></tr></thead>
+          <tbody id="att-hist-tbody"></tbody>
+        </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="att-report">
+      <div class="filter-row">
+        <input type="month" class="filter-select" id="att-month" onchange="renderAbsenceReport()">
+      </div>
+      <div id="absence-report-content"></div>
+    </div>
+  </div>
+
+  <!-- ══ CARDS ══ -->
+  <div class="page" id="page-cards">
+    <div class="filter-row">
+      <div class="search-bar" style="flex:1">
+        <i class="fas fa-search"></i>
+        <input type="text" id="card-q" placeholder="ابحث باسم أو ID..." oninput="renderCardsList()">
+      </div>
+      <select class="filter-select" id="card-status-filter" onchange="renderCardsList()">
+        <option value="">كل الحالات</option>
+        <option value="active">نشط</option>
+        <option value="expiring">ينتهي قريباً</option>
+        <option value="expired">منتهي</option>
+      </select>
+      <button class="btn btn-ghost btn-sm no-print" onclick="printAllCards()"><i class="fas fa-print"></i> طباعة الكل</button>
+    </div>
+    <div id="cards-grid" class="cards-grid-wrap"></div>
+  </div>
+
+  <!-- ══ SUBSCRIPTIONS ══ -->
+  <div class="page" id="page-subscriptions">
+    <div class="stats-grid" style="grid-template-columns:repeat(3,1fr)" id="sub-stats"></div>
+    <div class="card">
+      <div class="card-header">
+        <i class="fas fa-credit-card" style="color:var(--accent)"></i>
+        <span class="card-title">جميع الاشتراكات</span>
+      </div>
+      <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>العضو</th><th>الخطة</th><th>السعر</th><th>البداية</th><th>النهاية</th><th>المتبقي</th><th>الحالة</th><th>إجراءات</th></tr></thead>
+        <tbody id="sub-tbody"></tbody>
+      </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ PAYMENTS ══ -->
+  <div class="page" id="page-payments">
+    <div class="filter-row">
+      <input type="month" class="filter-select" id="pay-month" oninput="renderPayments()">
+      <div class="search-bar" style="flex:1">
+        <i class="fas fa-search"></i>
+        <input type="text" id="pay-q" placeholder="ابحث باسم العضو..." oninput="renderPayments()">
+      </div>
+      <button class="btn btn-primary btn-sm no-print" onclick="openAddPayment()"><i class="fas fa-plus"></i> إضافة دفعة</button>
+    </div>
+    <div class="stats-grid" style="grid-template-columns:repeat(3,1fr)" id="pay-stats"></div>
+    <div class="card">
+      <div class="card-header">
+        <i class="fas fa-money-bill-wave" style="color:var(--success)"></i>
+        <span class="card-title">سجل المدفوعات</span>
+        <button class="btn btn-ghost btn-sm no-print" onclick="exportPaymentsCSV()"><i class="fas fa-download"></i> تصدير</button>
+      </div>
+      <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>#</th><th>العضو</th><th>المبلغ</th><th>طريقة الدفع</th><th>الخطة</th><th>التاريخ</th><th>ملاحظة</th><th>حذف</th></tr></thead>
+        <tbody id="pay-tbody"></tbody>
+      </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ REPORTS ══ -->
+  <div class="page" id="page-reports">
+    <div class="filter-row no-print">
+      <select class="filter-select" id="report-period" onchange="renderReports()">
+        <option value="month">هذا الشهر</option>
+        <option value="quarter">آخر 3 أشهر</option>
+        <option value="year">هذا العام</option>
+        <option value="all">الكل</option>
+      </select>
+      <button class="btn btn-primary btn-sm" onclick="window.print()"><i class="fas fa-print"></i> طباعة التقرير</button>
+      <button class="btn btn-ghost btn-sm" onclick="exportReportCSV()"><i class="fas fa-file-csv"></i> تصدير CSV</button>
+    </div>
+    <div class="stats-grid" id="report-stats"></div>
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="chart-title"><i class="fas fa-chart-line" style="color:var(--success)"></i> الإيرادات الشهرية</div>
+        <canvas id="chart-revenue" height="200"></canvas>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title"><i class="fas fa-users" style="color:var(--info)"></i> الحضور اليومي (آخر 14 يوم)</div>
+        <canvas id="chart-att-trend" height="200"></canvas>
+      </div>
+    </div>
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="chart-title"><i class="fas fa-venus-mars" style="color:var(--purple)"></i> توزيع الجنس</div>
+        <canvas id="chart-gender" height="200"></canvas>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title"><i class="fas fa-calendar-week" style="color:var(--warning)"></i> الحضور حسب اليوم</div>
+        <canvas id="chart-weekday" height="200"></canvas>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><i class="fas fa-table" style="color:var(--primary)"></i><span class="card-title">ملخص تفصيلي</span></div>
+      <div class="card-body" id="report-detail"></div>
+    </div>
+  </div>
+
+  <!-- ══ WHATSAPP ══ -->
+  <div class="page" id="page-whatsapp">
+    <div class="card" style="margin-bottom:18px">
+      <div class="card-header" style="background:rgba(37,211,102,.05)">
+        <i class="fab fa-whatsapp" style="color:#25D366;font-size:22px"></i>
+        <span class="card-title">تنبيهات واتساب</span>
+        <button class="btn btn-success btn-sm no-print" onclick="sendAllWA()"><i class="fab fa-whatsapp"></i> إرسال للجميع</button>
+      </div>
+      <div style="padding:12px 18px;border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <div style="flex:1;font-size:13px;color:var(--text-muted)">
+          <i class="fas fa-info-circle" style="color:var(--info)"></i>
+          سيُرسل تنبيه تلقائي للأعضاء الذين اشتراكهم على وشك الانتهاء (يومين أو أقل) أو منتهٍ
+        </div>
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+          <input type="checkbox" id="wa-include-expired" onchange="renderWA()"> تضمين المنتهية
+        </label>
+      </div>
+      <div id="wa-list"></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><i class="fas fa-pencil" style="color:var(--accent)"></i><span class="card-title">تخصيص رسالة التنبيه</span></div>
+      <div class="card-body">
+        <div class="form-group">
+          <label>نص الرسالة (استخدم {name} و {days} و {date})</label>
+          <textarea id="wa-template" rows="5" style="resize:vertical">{greeting} {name} 👋
+عميلنا العزيز في X Gym 💪
+اشتراكك سينتهي خلال *{days} يوم* بتاريخ {date} 📅
+للتجديد تواصل معنا الآن 🔥
+
+#X_Gym #ابقى_قوي</textarea>
+        </div>
+        <button class="btn btn-primary btn-sm" style="margin-top:10px" onclick="showToast('تم حفظ القالب','t-success')"><i class="fas fa-save"></i> حفظ القالب</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SETTINGS ══ -->
+  <div class="page" id="page-settings">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
+      <div class="card">
+        <div class="card-header"><i class="fas fa-building" style="color:var(--primary)"></i><span class="card-title">بيانات الصالة</span></div>
+        <div class="card-body">
+          <div class="form-grid">
+            <div class="form-group full"><label>اسم الصالة</label><input type="text" id="gym-name-set" value="X Gym"></div>
+            <div class="form-group full"><label>العنوان</label><input type="text" id="gym-addr" placeholder="عنوان الصالة"></div>
+            <div class="form-group"><label>رقم الهاتف</label><input type="text" id="gym-phone" placeholder="01XXXXXXXXX"></div>
+            <div class="form-group"><label>البريد الإلكتروني</label><input type="email" id="gym-email" placeholder="info@xgym.com"></div>
+          </div>
+          <button class="btn btn-primary btn-sm" style="margin-top:14px" onclick="saveSettings()"><i class="fas fa-save"></i> حفظ</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><i class="fas fa-list-check" style="color:var(--accent)"></i><span class="card-title">خطط الاشتراك</span></div>
+        <div class="card-body" id="plans-settings"></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><i class="fas fa-database" style="color:var(--info)"></i><span class="card-title">البيانات</span></div>
+        <div class="card-body" style="display:flex;flex-direction:column;gap:10px">
+          <button class="btn btn-ghost" onclick="exportAllData()"><i class="fas fa-download"></i> تصدير كل البيانات (JSON)</button>
+          <button class="btn btn-ghost" onclick="document.getElementById('import-file').click()"><i class="fas fa-upload"></i> استيراد بيانات</button>
+          <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(this)">
+          <button class="btn btn-danger" onclick="confirmClearData()"><i class="fas fa-trash"></i> مسح كل البيانات</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><i class="fas fa-bell" style="color:var(--warning)"></i><span class="card-title">إعدادات التنبيهات</span></div>
+        <div class="card-body">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <span style="font-size:13px">تنبيه قبل انتهاء الاشتراك بـ</span>
+            <input type="number" id="notif-days" value="2" min="1" max="30" style="width:60px;background:var(--bg-card2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:4px 8px;text-align:center;font-family:'Cairo'">
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="showToast('تم حفظ الإعدادات','t-success')"><i class="fas fa-save"></i> حفظ</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- ════ MODAL: ADD/EDIT MEMBER ════ -->
+<div class="modal-overlay" id="modal-member">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-icon"><i class="fas fa-user-plus"></i></div>
+      <span class="modal-title" id="modal-member-title">إضافة عضو جديد</span>
+      <button class="modal-close" onclick="closeModal('modal-member')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="form-grid">
+      <div class="form-group full"><label>الاسم الكامل *</label><input type="text" id="m-name" placeholder="الاسم الكامل للعضو"></div>
+      <div class="form-group"><label>رقم الهاتف *</label><input type="text" id="m-phone" placeholder="01XXXXXXXXX"></div>
+      <div class="form-group"><label>رقم هاتف بديل</label><input type="text" id="m-phone2" placeholder="اختياري"></div>
+      <div class="form-group"><label>العمر</label><input type="number" id="m-age" placeholder="25" min="5" max="100"></div>
+      <div class="form-group"><label>الجنس</label>
+        <select id="m-gender"><option value="ذكر">ذكر</option><option value="أنثى">أنثى</option></select>
+      </div>
+      <div class="form-group"><label>خطة الاشتراك *</label>
+        <select id="m-plan" onchange="updateEndDate()">
+          <option value="شهري - 300 جنيه">شهري — 300 جنيه</option>
+          <option value="ثلاثة أشهر - 800 جنيه">3 أشهر — 800 جنيه</option>
+          <option value="ستة أشهر - 1400 جنيه">6 أشهر — 1400 جنيه</option>
+          <option value="سنوي - 2500 جنيه">سنوي — 2500 جنيه</option>
+        </select>
+      </div>
+      <div class="form-group"><label>تاريخ البداية *</label><input type="date" id="m-start" onchange="updateEndDate()"></div>
+      <div class="form-group"><label>تاريخ الانتهاء (محسوب)</label><input type="text" id="m-end-display" readonly style="color:var(--text-muted)"></div>
+      <div class="form-group full"><label>ملاحظات</label><textarea id="m-notes" rows="2" placeholder="أي ملاحظات إضافية..."></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-member')">إلغاء</button>
+      <button class="btn btn-primary" onclick="saveMember()"><i class="fas fa-save"></i> حفظ العضو</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ MODAL: ID CARD ════ -->
+<div class="modal-overlay" id="modal-card">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <div class="modal-icon" style="background:rgba(255,179,0,.12);color:var(--accent)"><i class="fas fa-id-card"></i></div>
+      <span class="modal-title">بطاقة العضو</span>
+      <button class="modal-close" onclick="closeModal('modal-card')"><i class="fas fa-times"></i></button>
+    </div>
+    <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap">
+      <div id="card-preview-wrap">
+        <div class="card-container">
+        <div class="id-card" id="id-card-front">
+          <div class="id-status-bar active" id="c-status-bar"></div>
+          <div class="shimmer"></div>
+          <div class="chip-icon"></div>
+          <div class="id-card-inner">
+            <div class="id-top">
+              <div><div class="id-gym-name">X GYM</div><div class="id-gym-sub">FITNESS CENTER</div></div>
+              <div><div id="c-id" class="id-num">#XG-0000</div><div style="font-size:8px;color:rgba(255,255,255,.28);text-align:left">MEMBER ID</div></div>
+            </div>
+            <div class="id-mid">
+              <div class="id-avatar" id="c-avatar">XG</div>
+              <div>
+                <div class="id-name" id="c-name">اسم العضو</div>
+                <div class="id-phone" id="c-phone"><i class="fas fa-phone" style="font-size:8px"></i> 01000000000</div>
+                <div class="id-chips">
+                  <span class="id-chip" id="c-gender">ذكر</span>
+                  <span class="id-chip" id="c-age-chip">-- سنة</span>
+                  <span class="id-chip active-chip" id="c-status-chip">نشط</span>
+                </div>
+              </div>
+            </div>
+            <div class="id-stripe"></div>
+            <div class="id-bottom">
+              <div class="id-bottom-info">
+                <div>
+                  <div class="id-info-label">الخطة</div>
+                  <div class="id-info-val" id="c-plan">شهري</div>
+                </div>
+                <div>
+                  <div class="id-info-label">ينتهي</div>
+                  <div class="id-info-val" id="c-expiry">--/--</div>
+                </div>
+                <div>
+                  <div class="id-info-label">حضور</div>
+                  <div class="id-info-val" id="c-att-count">--</div>
+                </div>
+              </div>
+              <div class="id-barcode-wrap">
+                <div class="id-qr-box"><div id="card-qr"></div></div>
+                <div class="id-barcode-num" id="c-barcode-num">XG-0000</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        </div>
+      </div>
+      <div style="flex:1;min-width:190px">
+        <div style="font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:14px;text-transform:uppercase;letter-spacing:1px">خيارات البطاقة</div>
+        <button class="btn btn-primary btn-block" style="margin-bottom:10px" onclick="printCard()"><i class="fas fa-print"></i> طباعة البطاقة</button>
+        <button class="btn btn-success btn-block" style="margin-bottom:10px" onclick="sendQRWhatsApp()"><i class="fab fa-whatsapp"></i> إرسال QR للعميل</button>
+        <button class="btn btn-ghost btn-block" style="margin-bottom:10px" onclick="downloadQR()"><i class="fas fa-download"></i> تحميل صورة QR</button>
+        <div class="divider"></div>
+        <div style="background:rgba(255,61,0,.06);border:1px solid rgba(255,61,0,.15);border-radius:10px;padding:12px;font-size:12px;color:var(--text-muted)">
+          <div style="margin-bottom:5px;color:var(--primary);font-weight:700"><i class="fas fa-qrcode"></i> كيف يعمل QR؟</div>
+          العميل يحمل البطاقة معه — عند وصوله، يُوجَّه <strong style="color:var(--text)">USB Scanner</strong> أو الكاميرا على كود QR. يُسجَّل الحضور تلقائياً فوراً بدون أي إدخال يدوي.
+          <div style="margin-top:7px;color:rgba(0,230,118,.8);font-size:11px"><i class="fas fa-check-circle"></i> الكود يحتوي على ID فقط: <strong>${document.getElementById('c-barcode-num')?.textContent||'XG-XXXXX'}</strong></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════ MODAL: ADD PAYMENT ════ -->
+<div class="modal-overlay" id="modal-payment">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-icon" style="background:rgba(0,230,118,.12);color:var(--success)"><i class="fas fa-money-bill"></i></div>
+      <span class="modal-title">إضافة دفعة مالية</span>
+      <button class="modal-close" onclick="closeModal('modal-payment')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>اختر العضو</label>
+        <select id="pay-member"></select>
+      </div>
+      <div class="form-group"><label>المبلغ (جنيه)</label><input type="number" id="pay-amount" placeholder="300"></div>
+      <div class="form-group"><label>طريقة الدفع</label>
+        <select id="pay-method">
+          <option value="كاش">كاش</option>
+          <option value="فودافون كاش">فودافون كاش</option>
+          <option value="إنستاباي">إنستاباي</option>
+          <option value="بطاقة">بطاقة</option>
+        </select>
+      </div>
+      <div class="form-group"><label>التاريخ</label><input type="date" id="pay-date"></div>
+      <div class="form-group full"><label>ملاحظة</label><input type="text" id="pay-note" placeholder="اختياري"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-payment')">إلغاء</button>
+      <button class="btn btn-success" onclick="savePayment()"><i class="fas fa-check"></i> حفظ الدفعة</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ CONFIRM OVERLAY ════ -->
+<div class="modal-overlay" id="confirm-overlay">
+  <div class="confirm-box">
+    <div class="confirm-icon" id="confirm-icon">⚠️</div>
+    <div class="confirm-title" id="confirm-title">تأكيد الإجراء</div>
+    <div class="confirm-msg" id="confirm-msg">هل أنت متأكد؟</div>
+    <div class="confirm-btns">
+      <button class="btn btn-ghost" onclick="closeModal('confirm-overlay')">إلغاء</button>
+      <button class="btn btn-danger" id="confirm-ok-btn">تأكيد</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"><i></i><span></span></div>
+
+<!-- ════════════ SCRIPT ════════════ -->
+<script>
+// ══════ STATE ══════
+let members   = JSON.parse(localStorage.getItem('xg_members')   || '[]');
+let attendance = JSON.parse(localStorage.getItem('xg_att')      || '[]');
+let payments   = JSON.parse(localStorage.getItem('xg_payments') || '[]');
+let settings   = JSON.parse(localStorage.getItem('xg_settings') || '{}');
+let editId = null;
+let charts = {};
+
+const PLANS = {
+  'شهري - 300 جنيه':        {months:1,  price:300},
+  'ثلاثة أشهر - 800 جنيه':  {months:3,  price:800},
+  'ستة أشهر - 1400 جنيه':   {months:6,  price:1400},
+  'سنوي - 2500 جنيه':        {months:12, price:2500},
+};
+
+// ══════ PERSIST ══════
+const save=()=>{
+  localStorage.setItem('xg_members',   JSON.stringify(members));
+  localStorage.setItem('xg_att',       JSON.stringify(attendance));
+  localStorage.setItem('xg_payments',  JSON.stringify(payments));
+  localStorage.setItem('xg_settings',  JSON.stringify(settings));
+};
+
+// ══════ HELPERS ══════
+const today = ()=>new Date().toISOString().split('T')[0];
+const daysLeft = end=>{
+  const n=new Date(); n.setHours(0,0,0,0);
+  const e=new Date(end); e.setHours(0,0,0,0);
+  return Math.ceil((e-n)/86400000);
+};
+const addMonths=(date,m)=>{
+  const d=new Date(date); d.setMonth(d.getMonth()+m); return d.toISOString().split('T')[0];
+};
+const fmtDate=d=>{if(!d)return'---';return new Date(d).toLocaleDateString('ar-EG',{year:'numeric',month:'short',day:'numeric'});};
+const initials=n=>n?n.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase():'XG';
+const genId=()=>'XG-'+String(Date.now()).slice(-5);
+const getStatus=m=>{const dl=daysLeft(m.endDate);return dl<0?'expired':dl<=2?'expiring':'active';};
+const statusBadge=s=>({
+  active:'<span class="badge badge-active"><i class="fas fa-circle" style="font-size:6px"></i> نشط</span>',
+  expiring:'<span class="badge badge-expiring"><i class="fas fa-clock"></i> ينتهي قريباً</span>',
+  expired:'<span class="badge badge-expired"><i class="fas fa-times-circle"></i> منتهي</span>',
+}[s]);
+const memberAttCount=id=>attendance.filter(a=>a.memberId===id).length;
+const destroyChart=key=>{if(charts[key]){charts[key].destroy();delete charts[key];}};
+const mkChart=(id,cfg)=>{destroyChart(id);charts[id]=new Chart(document.getElementById(id),cfg);};
+const chartDefaults={responsive:true,plugins:{legend:{display:false}},scales:{
+  x:{ticks:{color:'#666'},grid:{color:'rgba(255,255,255,.04)'}},
+  y:{ticks:{color:'#666'},grid:{color:'rgba(255,255,255,.04)'},beginAtZero:true}
+}};
+
+// ══════ TOAST ══════
+const showToast=(msg,type='t-success',icon='')=>{
+  const t=document.getElementById('toast');
+  const icons={
+    't-success':'fa-circle-check','t-error':'fa-circle-xmark',
+    't-info':'fa-circle-info','t-warning':'fa-triangle-exclamation'
+  };
+  t.className='toast '+type;
+  t.querySelector('i').className='fas '+(icon||icons[type]);
+  t.querySelector('span').textContent=msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3200);
+};
+
+// ══════ MODAL ══════
+const openModal=id=>document.getElementById(id).classList.add('open');
+const closeModal=id=>document.getElementById(id).classList.remove('open');
+const confirmAction=(title,msg,icon,cb)=>{
+  document.getElementById('confirm-title').textContent=title;
+  document.getElementById('confirm-msg').textContent=msg;
+  document.getElementById('confirm-icon').textContent=icon||'⚠️';
+  document.getElementById('confirm-ok-btn').onclick=()=>{closeModal('confirm-overlay');cb();};
+  openModal('confirm-overlay');
+};
+
+// ══════ NAV ══════
+const titles={
+  dashboard:'لوحة التحكم',members:'الأعضاء',
+  attendance:'الحضور والغياب',cards:'بطاقات الأعضاء',
+  subscriptions:'الاشتراكات',payments:'المدفوعات',
+  reports:'التقارير',whatsapp:'تنبيهات واتساب',settings:'الإعدادات'
+};
+function goto(p,el){
+  document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));
+  document.getElementById('page-'+p).classList.add('active');
+  document.getElementById('page-title').textContent=titles[p]||p;
+  if(el) el.classList.add('active');
+  if(p!=='attendance'&&camStream) stopCamera();
+  const renders={
+    dashboard:renderDashboard, members:renderMembers,
+    attendance:renderAttPage, cards:renderCardsList,
+    subscriptions:renderSubscriptions, payments:renderPayments,
+    reports:renderReports, whatsapp:renderWA, settings:renderSettings
+  };
+  if(renders[p]) renders[p]();
+}
+
+// ══════ CLOCK ══════
+function updateClock(){
+  const n=new Date();
+  document.getElementById('live-clock').textContent=n.toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  document.getElementById('live-date').textContent=n.toLocaleDateString('ar-EG',{weekday:'long',day:'numeric',month:'long'});
+}
+setInterval(updateClock,1000);updateClock();
+
+// ══════ GLOBAL SEARCH ══════
+function globalSearch(q){
+  if(!q){return;}
+  q=q.toLowerCase();
+  const res=members.filter(m=>m.name.toLowerCase().includes(q)||m.phone.includes(q)||m.id.toLowerCase().includes(q));
+  if(res.length){
+    goto('members',document.getElementById('nav-members'));
+    document.getElementById('member-q').value=q;
+    renderMembers();
+  }
+}
+
+// ══════ ADD/EDIT MEMBER ══════
+function openAddMember(){
+  editId=null;
+  document.getElementById('modal-member-title').textContent='إضافة عضو جديد';
+  ['m-name','m-phone','m-phone2','m-age','m-notes'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('m-plan').value='شهري - 300 جنيه';
+  document.getElementById('m-gender').value='ذكر';
+  document.getElementById('m-start').value=today();
+  updateEndDate();
+  openModal('modal-member');
+}
+function openEditMember(id){
+  const m=members.find(x=>x.id===id); if(!m) return;
+  editId=id;
+  document.getElementById('modal-member-title').textContent='تعديل بيانات العضو';
+  document.getElementById('m-name').value=m.name;
+  document.getElementById('m-phone').value=m.phone;
+  document.getElementById('m-phone2').value=m.phone2||'';
+  document.getElementById('m-age').value=m.age||'';
+  document.getElementById('m-plan').value=m.plan;
+  document.getElementById('m-gender').value=m.gender||'ذكر';
+  document.getElementById('m-start').value=m.startDate;
+  document.getElementById('m-notes').value=m.notes||'';
+  updateEndDate();
+  openModal('modal-member');
+}
+function updateEndDate(){
+  const plan=document.getElementById('m-plan').value;
+  const start=document.getElementById('m-start').value;
+  if(start&&PLANS[plan]){
+    document.getElementById('m-end-display').value=fmtDate(addMonths(start,PLANS[plan].months));
+  }
+}
+function saveMember(){
+  const name=document.getElementById('m-name').value.trim();
+  const phone=document.getElementById('m-phone').value.trim();
+  const phone2=document.getElementById('m-phone2').value.trim();
+  const age=document.getElementById('m-age').value;
+  const plan=document.getElementById('m-plan').value;
+  const start=document.getElementById('m-start').value;
+  const gender=document.getElementById('m-gender').value;
+  const notes=document.getElementById('m-notes').value.trim();
+  if(!name||!phone||!start){showToast('يرجى ملء الحقول المطلوبة (*)','t-error');return;}
+  const end=addMonths(start,(PLANS[plan]||{months:1}).months);
+  const price=(PLANS[plan]||{price:0}).price;
+  if(editId){
+    const idx=members.findIndex(x=>x.id===editId);
+    members[idx]={...members[idx],name,phone,phone2,age,plan,startDate:start,endDate:end,gender,notes};
+    showToast('تم تحديث بيانات العضو ✓');
+  } else {
+    const id=genId();
+    members.push({id,name,phone,phone2,age,plan,startDate:start,endDate:end,gender,notes,joinDate:start});
+    // Auto add payment
+    payments.push({id:'PAY-'+Date.now(),memberId:id,memberName:name,amount:price,method:'كاش',date:start,note:'اشتراك جديد - '+plan.split(' - ')[0]});
+    showToast('تم إضافة العضو بنجاح ✓');
+  }
+  save(); closeModal('modal-member');
+  renderDashboard(); renderMembers();
+}
+function deleteMember(id){
+  const m=members.find(x=>x.id===id);
+  confirmAction('حذف العضو',`هل تريد حذف "${m?.name}" نهائياً؟`,'🗑️',()=>{
+    members=members.filter(x=>x.id!==id);
+    attendance=attendance.filter(a=>a.memberId!==id);
+    save(); renderMembers(); renderDashboard();
+    showToast('تم حذف العضو','t-error');
+  });
+}
+
+// ══════ DASHBOARD ══════
+function renderDashboard(){
+  const now=new Date();
+  const total=members.length;
+  const active=members.filter(m=>getStatus(m)==='active').length;
+  const expiring=members.filter(m=>getStatus(m)==='expiring').length;
+  const expired=members.filter(m=>getStatus(m)==='expired').length;
+  const todayStr=today();
+  const todayCount=attendance.filter(a=>a.date===todayStr).length;
+  const monthRevenue=payments.filter(p=>{
+    const d=new Date(p.date); return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();
+  }).reduce((s,p)=>s+(+p.amount||0),0);
+
+  document.getElementById('dash-stats').innerHTML=`
+    <div class="stat-card c-red">
+      <div class="glow-line"></div>
+      <div class="stat-top">
+        <div class="stat-icon c-red"><i class="fas fa-users"></i></div>
+        <span class="stat-trend up">+${members.filter(m=>{const d=new Date(m.joinDate||m.startDate);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();}).length} هذا الشهر</span>
+      </div>
+      <div class="stat-value">${total}</div>
+      <div class="stat-label">إجمالي الأعضاء</div>
+      <div class="stat-sub"><i class="fas fa-circle" style="color:var(--success);font-size:8px"></i> ${active} نشط · <i class="fas fa-circle" style="color:var(--danger);font-size:8px"></i> ${expired} منتهي</div>
+    </div>
+    <div class="stat-card c-gold">
+      <div class="glow-line"></div>
+      <div class="stat-top">
+        <div class="stat-icon c-gold"><i class="fas fa-triangle-exclamation"></i></div>
+        <span class="stat-trend ${expiring>0?'down':'up'}">${expiring>0?'تنبيه':'ممتاز'}</span>
+      </div>
+      <div class="stat-value">${expiring}</div>
+      <div class="stat-label">ينتهي خلال يومين</div>
+      <div class="stat-sub"><i class="fas fa-times-circle" style="color:var(--danger);font-size:10px"></i> ${expired} انتهى فعلاً</div>
+    </div>
+    <div class="stat-card c-green">
+      <div class="glow-line"></div>
+      <div class="stat-top">
+        <div class="stat-icon c-green"><i class="fas fa-fingerprint"></i></div>
+        <span class="stat-trend up">اليوم</span>
+      </div>
+      <div class="stat-value">${todayCount}</div>
+      <div class="stat-label">حضور اليوم</div>
+      <div class="stat-sub">معدل ${total>0?Math.round(todayCount/total*100):0}% من الأعضاء</div>
+    </div>
+    <div class="stat-card c-blue">
+      <div class="glow-line"></div>
+      <div class="stat-top">
+        <div class="stat-icon c-blue"><i class="fas fa-dollar-sign"></i></div>
+        <span class="stat-trend up">هذا الشهر</span>
+      </div>
+      <div class="stat-value">${monthRevenue.toLocaleString()}</div>
+      <div class="stat-label">الإيراد (جنيه)</div>
+      <div class="stat-sub">إجمالي: ${payments.reduce((s,p)=>s+(+p.amount||0),0).toLocaleString()} جنيه</div>
+    </div>`;
+
+  document.getElementById('today-att-count').textContent=todayCount;
+  document.getElementById('wa-badge').textContent=expiring+expired;
+
+  // Expiring table
+  const alertList=members.filter(m=>getStatus(m)!=='active');
+  document.getElementById('dash-expiring').innerHTML=alertList.length?alertList.sort((a,b)=>daysLeft(a.endDate)-daysLeft(b.endDate)).map(m=>`
+    <tr>
+      <td><div class="td-member"><div class="avatar">${initials(m.name)}</div><div><div class="td-name">${m.name}</div><div class="td-sub">${m.plan.split(' - ')[0]}</div></div></div></td>
+      <td>${m.phone}</td>
+      <td>${fmtDate(m.endDate)}</td>
+      <td>${statusBadge(getStatus(m))}</td>
+      <td><button class="btn btn-success btn-xs no-print" onclick="sendWAOne('${m.id}')"><i class="fab fa-whatsapp"></i></button></td>
+    </tr>`).join(''):'<tr><td colspan="5" class="empty-row"><i class="fas fa-check-circle" style="color:var(--success);font-size:24px;display:block;margin-bottom:6px"></i>جميع الاشتراكات نشطة 🎉</td></tr>';
+
+  // Mini calendar
+  renderMiniCal();
+
+  // Charts
+  const months=['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+  const yr=now.getFullYear();
+  const monthlyCounts=months.map((_,i)=>members.filter(m=>{const d=new Date(m.joinDate||m.startDate);return d.getFullYear()===yr&&d.getMonth()===i;}).length);
+  mkChart('chart-monthly',{type:'bar',data:{labels:months,datasets:[{label:'أعضاء',data:monthlyCounts,backgroundColor:ctx=>ctx.parsed?.y?'rgba(255,61,0,.7)':'rgba(255,61,0,.2)',borderColor:'#FF3D00',borderWidth:1,borderRadius:5}]},options:{...chartDefaults}});
+
+  const planCounts={};
+  members.forEach(m=>{const k=m.plan.split(' - ')[0];planCounts[k]=(planCounts[k]||0)+1;});
+  mkChart('chart-plans',{type:'doughnut',data:{labels:Object.keys(planCounts),datasets:[{data:Object.values(planCounts),backgroundColor:['#FF3D00','#FFB300','#00E676','#00B0FF'],borderWidth:0,hoverOffset:6}]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{color:'#888',padding:8,font:{size:11}}}},cutout:'65%'}});
+}
+
+// ══════ MINI CALENDAR ══════
+function renderMiniCal(){
+  const now=new Date();
+  const y=now.getFullYear(),m=now.getMonth();
+  const firstDay=new Date(y,m,1).getDay();
+  const daysInMonth=new Date(y,m+1,0).getDate();
+  const months=['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+  const days=['ح','ن','ث','ر','خ','ج','س'];
+  const attDays=new Set(attendance.filter(a=>{const d=new Date(a.date);return d.getMonth()===m&&d.getFullYear()===y;}).map(a=>new Date(a.date).getDate()));
+  let html=`<div class="cal-header"><span class="cal-month">${months[m]} ${y}</span></div><div class="cal-grid">`;
+  days.forEach(d=>html+=`<div class="cal-day-label">${d}</div>`);
+  for(let i=0;i<firstDay;i++) html+=`<div class="cal-day other-month"></div>`;
+  for(let d=1;d<=daysInMonth;d++){
+    const cls=d===now.getDate()?'today':attDays.has(d)?'has-att':'';
+    html+=`<div class="cal-day ${cls}">${d}</div>`;
+  }
+  html+='</div>';
+  document.getElementById('mini-cal').innerHTML=html;
+}
+
+// ══════ MEMBERS TABLE ══════
+function renderMembers(){
+  const q=(document.getElementById('member-q')?.value||'').toLowerCase();
+  const sf=document.getElementById('member-filter')?.value||'';
+  const gf=document.getElementById('gender-filter')?.value||'';
+  const pf=document.getElementById('plan-filter')?.value||'';
+  let list=members.filter(m=>{
+    const sq=!q||m.name.toLowerCase().includes(q)||m.phone.includes(q)||m.id.toLowerCase().includes(q);
+    const ss=!sf||getStatus(m)===sf;
+    const sg=!gf||m.gender===gf;
+    const sp=!pf||m.plan.includes(pf);
+    return sq&&ss&&sg&&sp;
+  });
+  document.getElementById('members-count').textContent=`${list.length} عضو`;
+  document.getElementById('members-tbody').innerHTML=list.length?list.map(m=>`
+    <tr>
+      <td style="font-family:'Rajdhani';font-size:12px;color:var(--text-muted);font-weight:700">${m.id}</td>
+      <td>
+        <div class="td-member">
+          <div class="avatar">${initials(m.name)}</div>
+          <div>
+            <div class="td-name">${m.name}</div>
+            <div class="td-sub">${m.notes||'&nbsp;'}</div>
+          </div>
+        </div>
+      </td>
+      <td><a href="tel:${m.phone}" style="color:var(--info);text-decoration:none">${m.phone}</a></td>
+      <td><span style="font-size:12px">${m.plan.split(' - ')[0]}</span></td>
+      <td><span style="font-size:12px">${fmtDate(m.endDate)}</span>
+        <div class="progress" style="width:70px;margin-top:3px">
+          <div class="progress-fill ${daysLeft(m.endDate)>10?'c-green':daysLeft(m.endDate)>2?'c-gold':'c-red'}" style="width:${Math.max(3,Math.min(100,daysLeft(m.endDate)/(PLANS[m.plan]?.months||1)/30*100))}%"></div>
+        </div>
+      </td>
+      <td><span style="font-size:12px;color:var(--text-muted)">${memberAttCount(m.id)} مرة</span></td>
+      <td>${statusBadge(getStatus(m))}</td>
+      <td>
+        <div style="display:flex;gap:4px">
+          <button class="btn btn-ghost btn-xs no-print" title="تعديل" onclick="openEditMember('${m.id}')"><i class="fas fa-edit"></i></button>
+          <button class="btn btn-ghost btn-xs no-print" title="بطاقة" onclick="showCard('${m.id}')"><i class="fas fa-id-card"></i></button>
+          <button class="btn btn-ghost btn-xs no-print" title="تجديد" onclick="renewSub('${m.id}')"><i class="fas fa-sync"></i></button>
+          <button class="btn btn-ghost btn-xs no-print" title="واتساب" onclick="sendWAOne('${m.id}')"><i class="fab fa-whatsapp" style="color:#25D366"></i></button>
+          <button class="btn btn-danger btn-xs no-print" title="حذف" onclick="deleteMember('${m.id}')"><i class="fas fa-trash"></i></button>
+        </div>
+      </td>
+    </tr>`).join(''):'<tr><td colspan="8" class="empty-row"><i class="fas fa-user-slash" style="font-size:28px;display:block;margin-bottom:8px;color:var(--border2)"></i>لا يوجد أعضاء مطابقون</td></tr>';
+}
+function exportMembersCSV(){
+  let csv='\uFEFFID,الاسم,الهاتف,الخطة,البداية,النهاية,الحالة,الجنس\n';
+  members.forEach(m=>csv+=`${m.id},${m.name},${m.phone},${m.plan.split(' - ')[0]},${m.startDate},${m.endDate},${getStatus(m)},${m.gender||''}\n`);
+  dlCSV(csv,'members.csv');
+}
+const dlCSV=(csv,name)=>{const b=new Blob([csv],{type:'text/csv;charset=utf-8'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=name;a.click();};
+
+// ══════ ATTENDANCE ══════
+function renderAttPage(){
+  document.getElementById('att-hist-date').value=today();
+  document.getElementById('att-month').value=new Date().toISOString().slice(0,7);
+  renderAttGrid(); renderAttHistory();
+}
+function switchAttTab(tab,el){
+  document.querySelectorAll('#att-tabs .tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('[id^="att-"]').forEach(p=>{if(p.classList.contains('tab-panel'))p.classList.remove('active');});
+  el.classList.add('active');
+  document.getElementById('att-'+tab).classList.add('active');
+  if(tab==='history') renderAttHistory();
+  if(tab==='report') renderAbsenceReport();
+  if(tab!=='scan'&&camStream) stopCamera();
+  // Auto-focus scan input for USB scanner when scan tab opens
+  if(tab==='scan'){
+    setTimeout(()=>{
+      const inp=document.getElementById('scan-input');
+      if(inp) inp.focus();
+    },100);
+  }
+}
+function renderAttGrid(){
+  const q=(document.getElementById('att-q')?.value||'').toLowerCase();
+  const todayStr=today();
+  const checkedIds=new Set(attendance.filter(a=>a.date===todayStr).map(a=>a.memberId));
+  let list=members.filter(m=>!q||m.name.toLowerCase().includes(q)||m.id.toLowerCase().includes(q));
+  document.getElementById('att-summary').textContent=`حاضر: ${checkedIds.size} / ${members.length}`;
+  document.getElementById('att-grid').innerHTML=list.map(m=>`
+    <div class="att-card ${checkedIds.has(m.id)?'in':''}" onclick="toggleAtt('${m.id}')">
+      <div class="avatar">${initials(m.name)}</div>
+      <div class="att-info">
+        <div class="att-name">${m.name}</div>
+        <div class="att-id">${m.id}</div>
+        <div class="att-plan">${m.plan.split(' - ')[0]}</div>
+      </div>
+      <div class="att-check">${checkedIds.has(m.id)?'<i class="fas fa-circle-check" style="color:var(--success)"></i>':'<i class="far fa-circle" style="color:var(--border2)"></i>'}</div>
+    </div>`).join('')||'<p style="color:var(--text-muted)">لا يوجد أعضاء</p>';
+}
+function toggleAtt(id){
+  const todayStr=today();
+  const now=new Date().toLocaleTimeString('ar-EG');
+  const exists=attendance.find(a=>a.memberId===id&&a.date===todayStr);
+  if(exists){attendance=attendance.filter(a=>!(a.memberId===id&&a.date===todayStr));showToast('تم إلغاء تسجيل الحضور','t-warning');}
+  else{attendance.push({memberId:id,date:todayStr,time:now});showToast('تم تسجيل الحضور ✓');}
+  save(); renderAttGrid();
+  document.getElementById('today-att-count').textContent=attendance.filter(a=>a.date===todayStr).length;
+}
+function doScan(){
+  const raw=document.getElementById('scan-input').value.trim().toUpperCase();
+  if(!raw) return;
+  // Normalize: accept XG-XXXXX directly or strip any prefix
+  let qid=raw;
+  if(raw.startsWith('XGYM:')) qid=raw.split(':')[1]||raw;
+  const m=members.find(x=>x.id===qid||x.id===raw);
+  const res=document.getElementById('scan-result');
+  document.getElementById('scan-input').value='';
+  // Re-focus for next scan
+  setTimeout(()=>document.getElementById('scan-input').focus(),60);
+  if(!m){
+    res.innerHTML=`<div style="background:rgba(255,61,0,.08);border:1px solid var(--danger);border-radius:12px;padding:14px;text-align:center">
+      <i class="fas fa-times-circle" style="color:var(--danger);font-size:28px;display:block;margin-bottom:8px"></i>
+      <div style="font-size:14px;font-weight:700">لم يُعثر على عضو</div>
+      <div style="font-size:12px;color:var(--text-muted);margin-top:4px">ID: ${raw}</div>
+    </div>`;
+    showToast('عضو غير موجود','t-error');
+    setTimeout(()=>res.innerHTML='',3500);
+    return;
+  }
+  toggleAtt(m.id);
+  const todayStr=today();
+  const checked=attendance.some(a=>a.memberId===m.id&&a.date===todayStr);
+  const st=getStatus(m);
+  const stColor=st==='active'?'var(--success)':st==='expiring'?'var(--warning)':'var(--danger)';
+  res.innerHTML=`<div style="background:rgba(0,230,118,.08);border:1px solid var(--success);border-radius:12px;padding:18px;text-align:center">
+    <div class="avatar avatar-lg" style="margin:0 auto 10px;width:52px;height:52px;font-size:20px">${initials(m.name)}</div>
+    <div style="font-size:17px;font-weight:800">${m.name}</div>
+    <div style="font-size:12px;color:var(--text-muted);margin-top:4px">${m.id} • ${m.plan.split(' - ')[0]}</div>
+    <div style="color:${stColor};font-size:11px;margin-top:4px">${statusBadge(st)}</div>
+    <div style="color:var(--success);font-weight:700;margin-top:10px;font-size:15px"><i class="fas fa-check-circle"></i> ${checked?'تم تسجيل الحضور ✓':'تم إلغاء الحضور'}</div>
+    <div style="font-size:11px;color:var(--text-muted);margin-top:4px">${new Date().toLocaleTimeString('ar-EG')}</div>
+  </div>`;
+  setTimeout(()=>res.innerHTML='',5000);
+}
+
+// USB Scanner: auto-trigger after ID pattern match (XG-XXXXX = 8 chars)
+function autoScanIfComplete(val){
+  if(/^XG-\d{5}$/.test(val.trim().toUpperCase())){
+    setTimeout(doScan,80);
+  }
+}
+function renderAttHistory(){
+  const dateFilter=document.getElementById('att-hist-date')?.value||'';
+  let log=[...attendance].reverse();
+  if(dateFilter) log=log.filter(a=>a.date===dateFilter);
+  document.getElementById('att-hist-tbody').innerHTML=log.slice(0,100).map(a=>{
+    const m=members.find(x=>x.id===a.memberId);
+    return`<tr>
+      <td style="font-family:'Rajdhani';font-size:12px;color:var(--text-muted)">${a.memberId}</td>
+      <td><div class="td-member"><div class="avatar" style="width:28px;height:28px;font-size:11px">${m?initials(m.name):'?'}</div>${m?m.name:'محذوف'}</div></td>
+      <td style="font-size:12px">${m?m.plan.split(' - ')[0]:'---'}</td>
+      <td>${fmtDate(a.date)}</td>
+      <td style="font-family:'Rajdhani'">${a.time}</td>
+      <td><span class="badge badge-present"><i class="fas fa-check"></i> حاضر</span></td>
+    </tr>`;
+  }).join('')||'<tr><td colspan="6" class="empty-row">لا يوجد سجل حضور</td></tr>';
+}
+function renderAbsenceReport(){
+  const monthStr=document.getElementById('att-month')?.value||new Date().toISOString().slice(0,7);
+  const [y,mo]=monthStr.split('-').map(Number);
+  const daysInMo=new Date(y,mo,0).getDate();
+  const workdays=[];
+  for(let d=1;d<=daysInMo;d++){const dt=new Date(y,mo-1,d);if(dt.getDay()!==5)workdays.push(`${y}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`);}
+  const rows=members.map(m=>{
+    const att=workdays.filter(d=>attendance.some(a=>a.memberId===m.id&&a.date===d)).length;
+    const abs=workdays.length-att;
+    const pct=workdays.length?Math.round(att/workdays.length*100):0;
+    return{m,att,abs,pct};
+  }).sort((a,b)=>a.pct-b.pct);
+  document.getElementById('absence-report-content').innerHTML=`
+    <div class="card">
+      <div class="card-header"><i class="fas fa-calendar-xmark" style="color:var(--danger)"></i><span class="card-title">تقرير الغياب — ${monthStr}</span></div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>العضو</th><th>أيام الحضور</th><th>أيام الغياب</th><th>نسبة الحضور</th><th>التقييم</th></tr></thead>
+        <tbody>${rows.map(({m,att,abs,pct})=>`
+          <tr>
+            <td><div class="td-member"><div class="avatar">${initials(m.name)}</div>${m.name}</div></td>
+            <td style="color:var(--success);font-weight:700">${att}</td>
+            <td style="color:var(--danger);font-weight:700">${abs}</td>
+            <td>
+              <div style="display:flex;align-items:center;gap:8px">
+                <div class="progress" style="width:80px"><div class="progress-fill ${pct>=70?'c-green':pct>=40?'c-gold':'c-red'}" style="width:${pct}%"></div></div>
+                <span style="font-size:12px;font-weight:700">${pct}%</span>
+              </div>
+            </td>
+            <td>${pct>=70?'<span class="badge badge-active">ممتاز</span>':pct>=40?'<span class="badge badge-expiring">متوسط</span>':'<span class="badge badge-expired">ضعيف</span>'}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table></div>
+    </div>`;
+}
+function exportAttendance(){
+  const todayStr=today();
+  const todayAtt=attendance.filter(a=>a.date===todayStr);
+  let csv='\uFEFFID,الاسم,الهاتف,التاريخ,وقت الدخول\n';
+  todayAtt.forEach(a=>{const m=members.find(x=>x.id===a.memberId);if(m) csv+=`${m.id},${m.name},${m.phone},${a.date},${a.time}\n`;});
+  dlCSV(csv,'attendance_'+todayStr+'.csv');
+  showToast('تم تصدير سجل الحضور');
+}
+
+// ══════ ID CARD ══════
+function showCard(id){
+  const m=members.find(x=>x.id===id); if(!m) return;
+  const st=getStatus(m);
+  document.getElementById('c-id').textContent='#'+m.id;
+  document.getElementById('c-avatar').textContent=initials(m.name);
+  document.getElementById('c-name').textContent=m.name;
+  document.getElementById('c-phone').innerHTML=`<i class="fas fa-phone" style="font-size:8px"></i> ${m.phone}`;
+  document.getElementById('c-gender').textContent=m.gender||'ذكر';
+  document.getElementById('c-age-chip').textContent=(m.age||'--')+' سنة';
+  document.getElementById('c-plan').textContent=m.plan.split(' - ')[0];
+  document.getElementById('c-expiry').textContent=fmtDate(m.endDate);
+  document.getElementById('c-barcode-num').textContent=m.id;
+  document.getElementById('c-att-count').textContent=memberAttCount(m.id)+' مرة';
+  // Status chip
+  const sc=document.getElementById('c-status-chip');
+  sc.className='id-chip';
+  if(st==='active'){sc.classList.add('active-chip');sc.textContent='✓ نشط';}
+  else if(st==='expiring'){sc.classList.add('warn-chip');sc.textContent='⚠ ينتهي قريباً';}
+  else{sc.classList.add('danger-chip');sc.textContent='✕ منتهي';}
+  document.getElementById('c-status-bar').className='id-status-bar '+st;
+  // QR — store member id for WA/download
+  document.getElementById('id-card-front').dataset.memberId=m.id;
+  const qrDiv=document.getElementById('card-qr');
+  qrDiv.innerHTML='';
+  // Use member.id only (XG-XXXXX) — black, H error correction, no effects
+  try{
+    new QRCode(qrDiv,{
+      text: m.id,
+      width: 76,
+      height: 76,
+      colorDark: '#000000',
+      colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.H
+    });
+  }catch(e){console.warn('QR error',e);}
+  openModal('modal-card');
+}
+function printCard(){window.print();}
+
+function sendQRWhatsApp(){
+  const id=document.getElementById('id-card-front').dataset.memberId;
+  const m=members.find(x=>x.id===id); if(!m) return;
+  // Build QR image URL — use only member.id, black on white
+  const qrData=encodeURIComponent(m.id);
+  const qrImgUrl=`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${qrData}&color=000000&bgcolor=FFFFFF&ecc=H&margin=10`;
+  const msg=encodeURIComponent(
+`مرحباً ${m.name} 👋
+هذا رمز QR الخاص بك في *X Gym* 💪
+
+🆔 ID: ${m.id}
+📋 الخطة: ${m.plan.split(' - ')[0]}
+📅 صالح حتى: ${fmtDate(m.endDate)}
+
+🔗 صورة QR الخاصة بك:
+${qrImgUrl}
+
+احتفظ بهذا الرمز — يُستخدم لتسجيل حضورك تلقائياً عند الدخول للصالة 🏋️
+
+#X_Gym`);
+  const phone=m.phone.replace(/\D/g,'').replace(/^0/,'20');
+  window.open(`https://wa.me/${phone}?text=${msg}`,'_blank');
+  showToast(`تم إرسال QR لـ ${m.name} عبر واتساب`,'t-success');
+}
+
+function downloadQR(){
+  const id=document.getElementById('id-card-front').dataset.memberId;
+  const m=members.find(x=>x.id===id); if(!m) return;
+  // Generate a fresh high-quality 220px QR for download
+  const tmpDiv=document.createElement('div');
+  tmpDiv.style.position='absolute';tmpDiv.style.left='-9999px';
+  document.body.appendChild(tmpDiv);
+  try{
+    new QRCode(tmpDiv,{
+      text: m.id,
+      width: 220,
+      height: 220,
+      colorDark: '#000000',
+      colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.H
+    });
+  }catch(e){showToast('QR غير جاهز','t-error');document.body.removeChild(tmpDiv);return;}
+  setTimeout(()=>{
+    const qrCanvas=tmpDiv.querySelector('canvas');
+    if(!qrCanvas){showToast('QR غير جاهز','t-error');document.body.removeChild(tmpDiv);return;}
+    const pad=20, labelH=60, topBarH=44;
+    const out=document.createElement('canvas');
+    out.width=220+pad*2;out.height=220+pad*2+topBarH+labelH;
+    const ctx=out.getContext('2d');
+    // White bg
+    ctx.fillStyle='#ffffff';ctx.fillRect(0,0,out.width,out.height);
+    // Black top bar
+    ctx.fillStyle='#111111';ctx.fillRect(0,0,out.width,topBarH);
+    ctx.fillStyle='#ffffff';ctx.font='bold 16px Arial';
+    ctx.textAlign='center';ctx.fillText('X GYM',out.width/2,20);
+    ctx.font='11px Arial';ctx.fillStyle='rgba(255,255,255,.75)';
+    ctx.fillText('بطاقة الحضور',out.width/2,37);
+    // QR centered — draw at natural 220px (no scaling distortion)
+    ctx.drawImage(qrCanvas,pad,topBarH+pad,220,220);
+    // Member info
+    ctx.fillStyle='#111111';ctx.font='bold 14px Arial';ctx.textAlign='center';
+    ctx.fillText(m.name,out.width/2,topBarH+220+pad+20);
+    ctx.font='12px Arial';ctx.fillStyle='#555555';
+    ctx.fillText(m.id+' • '+m.plan.split(' - ')[0],out.width/2,topBarH+220+pad+38);
+    ctx.fillStyle='#CC2200';ctx.font='11px Arial';
+    ctx.fillText('صالح حتى: '+fmtDate(m.endDate),out.width/2,topBarH+220+pad+56);
+    // Download
+    const link=document.createElement('a');
+    link.download=`QR_${m.id}.png`;
+    link.href=out.toDataURL('image/png');
+    link.click();
+    showToast('تم تحميل صورة QR ✓');
+    document.body.removeChild(tmpDiv);
+  },150);
+}
+function renderCardsList(){
+  const q=(document.getElementById('card-q')?.value||'').toLowerCase();
+  const sf=document.getElementById('card-status-filter')?.value||'';
+  let list=members.filter(m=>{
+    const matchQ=!q||m.name.toLowerCase().includes(q)||m.id.toLowerCase().includes(q);
+    const matchS=!sf||getStatus(m)===sf;
+    return matchQ&&matchS;
+  });
+  document.getElementById('cards-grid').innerHTML=list.map(m=>{
+    const st=getStatus(m);
+    const attCount=memberAttCount(m.id);
+    const statusLabel=st==='active'?'✓ نشط':st==='expiring'?'⚠ ينتهي قريباً':'✕ منتهي';
+    const chipClass=st==='active'?'active-chip':st==='expiring'?'warn-chip':'danger-chip';
+    return`
+    <div class="card-item-wrap">
+      <div onclick="showCard('${m.id}')">
+        <div class="id-card">
+          <div class="id-status-bar ${st}"></div>
+          <div class="shimmer"></div>
+          <div class="chip-icon"></div>
+          <div class="id-card-inner">
+            <div class="id-top">
+              <div><div class="id-gym-name">X GYM</div><div class="id-gym-sub">FITNESS CENTER</div></div>
+              <div><div class="id-num">#${m.id}</div></div>
+            </div>
+            <div class="id-mid">
+              <div class="id-avatar">${initials(m.name)}</div>
+              <div>
+                <div class="id-name">${m.name}</div>
+                <div class="id-phone">${m.phone}</div>
+                <div class="id-chips">
+                  <span class="id-chip">${m.plan.split(' - ')[0]}</span>
+                  <span class="id-chip ${chipClass}">${statusLabel}</span>
+                </div>
+              </div>
+            </div>
+            <div class="id-stripe"></div>
+            <div class="id-bottom">
+              <div class="id-bottom-info">
+                <div><div class="id-info-label">ينتهي</div><div class="id-info-val">${fmtDate(m.endDate)}</div></div>
+                <div><div class="id-info-label">حضور</div><div class="id-info-val">${attCount} مرة</div></div>
+              </div>
+              <div class="id-barcode-wrap">
+                <div class="id-qr-box"><div id="qr-list-${m.id}"></div></div>
+                <div class="id-barcode-num">${m.id}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card-actions">
+        <button class="btn btn-primary btn-xs" onclick="event.stopPropagation();showCard('${m.id}')"><i class="fas fa-id-card"></i> عرض</button>
+        <button class="btn btn-success btn-xs" onclick="event.stopPropagation();showCard('${m.id}');setTimeout(sendQRWhatsApp,400)"><i class="fab fa-whatsapp"></i> QR واتساب</button>
+        <div style="flex:1"></div>
+        <div class="card-stat"><i class="fas fa-calendar-check"></i> ${fmtDate(m.joinDate||m.startDate)}</div>
+      </div>
+    </div>`}).join('')||'<div style="grid-column:1/-1;text-align:center;padding:60px 0;color:var(--text-muted)"><i class="fas fa-id-card" style="font-size:48px;display:block;margin-bottom:14px;color:var(--border2)"></i>لا توجد بطاقات</div>';
+
+  requestAnimationFrame(()=>{
+    list.forEach(m=>{
+      const el=document.getElementById('qr-list-'+m.id);
+      if(el&&!el.hasChildNodes()){
+        try{
+          new QRCode(el,{
+            text: m.id,
+            width: 76,
+            height: 76,
+            colorDark: '#000000',
+            colorLight: '#ffffff',
+            correctLevel: QRCode.CorrectLevel.H
+          });
+        }catch(e){}
+      }
+    });
+  });
+}
+function sendCardWAById(id){
+  showCard(id);setTimeout(sendQRWhatsApp,400);
+}
+function printAllCards(){
+  goto('cards',document.getElementById('nav-cards'));
+  setTimeout(()=>window.print(),500);
+}
+
+// ══════ SUBSCRIPTIONS ══════
+function renderSubscriptions(){
+  const active=members.filter(m=>getStatus(m)==='active').length;
+  const expiring=members.filter(m=>getStatus(m)==='expiring').length;
+  const expired=members.filter(m=>getStatus(m)==='expired').length;
+  document.getElementById('sub-stats').innerHTML=`
+    <div class="stat-card c-green"><div class="glow-line"></div><div class="stat-icon c-green"><i class="fas fa-check-circle"></i></div><div class="stat-value">${active}</div><div class="stat-label">اشتراك نشط</div></div>
+    <div class="stat-card c-gold"><div class="glow-line"></div><div class="stat-icon c-gold"><i class="fas fa-clock"></i></div><div class="stat-value">${expiring}</div><div class="stat-label">ينتهي قريباً</div></div>
+    <div class="stat-card c-red"><div class="glow-line"></div><div class="stat-icon c-red"><i class="fas fa-times-circle"></i></div><div class="stat-value">${expired}</div><div class="stat-label">منتهي</div></div>`;
+  document.getElementById('sub-tbody').innerHTML=members.sort((a,b)=>daysLeft(a.endDate)-daysLeft(b.endDate)).map(m=>{
+    const dl=daysLeft(m.endDate);
+    const pct=Math.max(3,Math.min(100,dl/(PLANS[m.plan]?.months||1)/30*100));
+    const price=PLANS[m.plan]?.price||0;
+    return`<tr>
+      <td><div class="td-member"><div class="avatar">${initials(m.name)}</div><div><div class="td-name">${m.name}</div><div class="td-sub">${m.id}</div></div></div></td>
+      <td>${m.plan.split(' - ')[0]}</td>
+      <td style="color:var(--success);font-weight:700">${price.toLocaleString()} ج</td>
+      <td>${fmtDate(m.startDate)}</td>
+      <td>${fmtDate(m.endDate)}</td>
+      <td>
+        <div style="font-size:12px;font-weight:700;color:${dl<0?'var(--danger)':dl<=2?'var(--warning)':'var(--success)'}">${dl>0?dl+' يوم':'منتهي'}</div>
+        <div class="progress" style="width:80px"><div class="progress-fill ${dl>10?'c-green':dl>2?'c-gold':'c-red'}" style="width:${pct}%"></div></div>
+      </td>
+      <td>${statusBadge(getStatus(m))}</td>
+      <td><button class="btn btn-primary btn-xs no-print" onclick="renewSub('${m.id}')"><i class="fas fa-sync"></i> تجديد</button></td>
+    </tr>`;
+  }).join('')||'<tr><td colspan="8" class="empty-row">لا يوجد اشتراكات</td></tr>';
+}
+function renewSub(id){
+  const m=members.find(x=>x.id===id); if(!m) return;
+  const months=(PLANS[m.plan]||{months:1}).months;
+  const price=(PLANS[m.plan]||{price:0}).price;
+  const newStart=today();
+  m.startDate=newStart;
+  m.endDate=addMonths(newStart,months);
+  payments.push({id:'PAY-'+Date.now(),memberId:id,memberName:m.name,amount:price,method:'كاش',date:newStart,note:'تجديد - '+m.plan.split(' - ')[0]});
+  save(); renderSubscriptions(); renderDashboard();
+  showToast(`تم تجديد اشتراك ${m.name} ✓`);
+}
+
+// ══════ PAYMENTS ══════
+function openAddPayment(){
+  document.getElementById('pay-member').innerHTML=members.map(m=>`<option value="${m.id}">${m.name}</option>`).join('');
+  document.getElementById('pay-date').value=today();
+  document.getElementById('pay-amount').value='';
+  document.getElementById('pay-note').value='';
+  openModal('modal-payment');
+}
+function savePayment(){
+  const mid=document.getElementById('pay-member').value;
+  const amount=document.getElementById('pay-amount').value;
+  const method=document.getElementById('pay-method').value;
+  const date=document.getElementById('pay-date').value;
+  const note=document.getElementById('pay-note').value;
+  const m=members.find(x=>x.id===mid);
+  if(!amount){showToast('يرجى إدخال المبلغ','t-error');return;}
+  payments.push({id:'PAY-'+Date.now(),memberId:mid,memberName:m?.name||'',amount:+amount,method,date,note});
+  save(); closeModal('modal-payment'); renderPayments();
+  showToast('تم حفظ الدفعة ✓');
+}
+function renderPayments(){
+  const monthStr=document.getElementById('pay-month')?.value||new Date().toISOString().slice(0,7);
+  const q=(document.getElementById('pay-q')?.value||'').toLowerCase();
+  let list=payments.filter(p=>{
+    const inMonth=!monthStr||p.date?.startsWith(monthStr);
+    const match=!q||(p.memberName||'').toLowerCase().includes(q);
+    return inMonth&&match;
+  }).sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const totalMonth=list.reduce((s,p)=>s+(+p.amount||0),0);
+  const totalAll=payments.reduce((s,p)=>s+(+p.amount||0),0);
+  document.getElementById('pay-stats').innerHTML=`
+    <div class="stat-card c-green"><div class="glow-line"></div><div class="stat-icon c-green"><i class="fas fa-calendar-check"></i></div><div class="stat-value">${totalMonth.toLocaleString()}</div><div class="stat-label">إيراد الشهر (ج)</div></div>
+    <div class="stat-card c-blue"><div class="glow-line"></div><div class="stat-icon c-blue"><i class="fas fa-coins"></i></div><div class="stat-value">${totalAll.toLocaleString()}</div><div class="stat-label">إجمالي الإيرادات (ج)</div></div>
+    <div class="stat-card c-gold"><div class="glow-line"></div><div class="stat-icon c-gold"><i class="fas fa-receipt"></i></div><div class="stat-value">${list.length}</div><div class="stat-label">عدد المعاملات</div></div>`;
+  document.getElementById('pay-tbody').innerHTML=list.map((p,i)=>`
+    <tr>
+      <td style="font-size:11px;color:var(--text-muted)">${i+1}</td>
+      <td><div class="td-member"><div class="avatar" style="width:28px;height:28px;font-size:11px">${initials(p.memberName||'?')}</div>${p.memberName||'---'}</div></td>
+      <td style="color:var(--success);font-weight:700">${(+p.amount).toLocaleString()} ج</td>
+      <td><span class="badge badge-info">${p.method}</span></td>
+      <td style="font-size:12px">${p.note||'---'}</td>
+      <td>${fmtDate(p.date)}</td>
+      <td style="color:var(--text-muted);font-size:12px">${p.note||''}</td>
+      <td><button class="btn btn-danger btn-xs no-print" onclick="deletePayment('${p.id}')"><i class="fas fa-trash"></i></button></td>
+    </tr>`).join('')||'<tr><td colspan="8" class="empty-row">لا توجد مدفوعات</td></tr>';
+}
+function deletePayment(id){
+  payments=payments.filter(p=>p.id!==id); save(); renderPayments();
+  showToast('تم حذف الدفعة','t-error');
+}
+function exportPaymentsCSV(){
+  let csv='\uFEFFرقم,العضو,المبلغ,طريقة الدفع,التاريخ,ملاحظة\n';
+  payments.forEach((p,i)=>csv+=`${i+1},${p.memberName},${p.amount},${p.method},${p.date},${p.note||''}\n`);
+  dlCSV(csv,'payments.csv');
+}
+
+// ══════ REPORTS ══════
+function renderReports(){
+  const period=document.getElementById('report-period')?.value||'month';
+  const now=new Date();
+  const filterDate=d=>{
+    const dt=new Date(d);
+    if(period==='month') return dt.getMonth()===now.getMonth()&&dt.getFullYear()===now.getFullYear();
+    if(period==='quarter'){const q=new Date(now);q.setMonth(q.getMonth()-3);return dt>=q;}
+    if(period==='year') return dt.getFullYear()===now.getFullYear();
+    return true;
+  };
+  const filteredMembers=members.filter(m=>filterDate(m.joinDate||m.startDate));
+  const filteredPay=payments.filter(p=>filterDate(p.date));
+  const filteredAtt=attendance.filter(a=>filterDate(a.date));
+  const totalRev=filteredPay.reduce((s,p)=>s+(+p.amount||0),0);
+  const avgRev=filteredPay.length?Math.round(totalRev/filteredPay.length):0;
+
+  document.getElementById('report-stats').innerHTML=`
+    <div class="stat-card c-red"><div class="glow-line"></div><div class="stat-icon c-red"><i class="fas fa-user-plus"></i></div><div class="stat-value">${filteredMembers.length}</div><div class="stat-label">أعضاء جدد</div></div>
+    <div class="stat-card c-green"><div class="glow-line"></div><div class="stat-icon c-green"><i class="fas fa-sack-dollar"></i></div><div class="stat-value">${totalRev.toLocaleString()}</div><div class="stat-label">الإيرادات (ج)</div></div>
+    <div class="stat-card c-blue"><div class="glow-line"></div><div class="stat-icon c-blue"><i class="fas fa-fingerprint"></i></div><div class="stat-value">${filteredAtt.length}</div><div class="stat-label">إجمالي الحضور</div></div>
+    <div class="stat-card c-purple"><div class="glow-line"></div><div class="stat-icon c-purple"><i class="fas fa-chart-simple"></i></div><div class="stat-value">${avgRev}</div><div class="stat-label">متوسط الدفعة (ج)</div></div>`;
+
+  // Revenue chart
+  const months=['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+  const yr=now.getFullYear();
+  const monthlyRev=months.map((_,i)=>payments.filter(p=>{const d=new Date(p.date);return d.getFullYear()===yr&&d.getMonth()===i;}).reduce((s,p)=>s+(+p.amount||0),0));
+  mkChart('chart-revenue',{type:'line',data:{labels:months,datasets:[{label:'الإيرادات',data:monthlyRev,borderColor:'#00E676',backgroundColor:'rgba(0,230,118,.08)',fill:true,tension:.4,pointBackgroundColor:'#00E676',pointRadius:4}]},options:{...chartDefaults}});
+
+  // Attendance trend (last 14 days)
+  const attDays=[]; const attCounts=[];
+  for(let i=13;i>=0;i--){
+    const d=new Date(); d.setDate(d.getDate()-i);
+    const ds=d.toISOString().split('T')[0];
+    attDays.push(d.toLocaleDateString('ar-EG',{month:'short',day:'numeric'}));
+    attCounts.push(attendance.filter(a=>a.date===ds).length);
+  }
+  mkChart('chart-att-trend',{type:'bar',data:{labels:attDays,datasets:[{label:'حضور',data:attCounts,backgroundColor:'rgba(0,176,255,.6)',borderRadius:4}]},options:{...chartDefaults}});
+
+  // Gender
+  const males=members.filter(m=>m.gender==='ذكر').length;
+  const females=members.filter(m=>m.gender==='أنثى').length;
+  mkChart('chart-gender',{type:'doughnut',data:{labels:['ذكور','إناث'],datasets:[{data:[males,females],backgroundColor:['#00B0FF','#ff61a4'],borderWidth:0}]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{color:'#888',padding:12}}},cutout:'60%'}});
+
+  // Weekday attendance
+  const wdays=['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+  const wdCounts=wdays.map((_,i)=>attendance.filter(a=>new Date(a.date).getDay()===i).length);
+  mkChart('chart-weekday',{type:'bar',data:{labels:wdays,datasets:[{label:'حضور',data:wdCounts,backgroundColor:wdCounts.map(c=>c===Math.max(...wdCounts)?'rgba(255,179,0,.8)':'rgba(255,179,0,.35)'),borderRadius:4}]},options:{...chartDefaults}});
+
+  // Summary
+  const planDist=Object.entries(PLANS).map(([plan])=>{
+    const count=members.filter(m=>m.plan===plan).length;
+    const rev=payments.filter(p=>{const m=members.find(x=>x.id===p.memberId);return m?.plan===plan;}).reduce((s,p)=>s+(+p.amount||0),0);
+    return{plan,count,rev};
+  });
+  document.getElementById('report-detail').innerHTML=`
+    <table><thead><tr><th>الخطة</th><th>عدد الأعضاء</th><th>الإيرادات</th><th>متوسط السعر</th></tr></thead>
+    <tbody>${planDist.map(r=>`<tr>
+      <td>${r.plan.split(' - ')[0]}</td>
+      <td><strong>${r.count}</strong></td>
+      <td style="color:var(--success);font-weight:700">${r.rev.toLocaleString()} ج</td>
+      <td>${r.count?Math.round(r.rev/r.count).toLocaleString():0} ج</td>
+    </tr>`).join('')}
+    </tbody></table>`;
+}
+function exportReportCSV(){
+  let csv='\uFEFFالعضو,الخطة,البداية,النهاية,الحالة,الحضور,الإيرادات\n';
+  members.forEach(m=>{
+    const rev=payments.filter(p=>p.memberId===m.id).reduce((s,p)=>s+(+p.amount||0),0);
+    csv+=`${m.name},${m.plan.split(' - ')[0]},${m.startDate},${m.endDate},${getStatus(m)},${memberAttCount(m.id)},${rev}\n`;
+  });
+  dlCSV(csv,'report.csv');
+}
+
+// ══════ WHATSAPP ══════
+function renderWA(){
+  const includeExpired=document.getElementById('wa-include-expired')?.checked;
+  let list=members.filter(m=>getStatus(m)==='expiring'||(includeExpired&&getStatus(m)==='expired'));
+  list=list.sort((a,b)=>daysLeft(a.endDate)-daysLeft(b.endDate));
+  document.getElementById('wa-badge').textContent=list.length;
+  document.getElementById('wa-list').innerHTML=list.length?list.map(m=>{
+    const dl=daysLeft(m.endDate);
+    const expired=dl<0;
+    return`<div class="wa-item">
+      <div class="wa-avatar">${initials(m.name)}</div>
+      <div class="wa-info">
+        <div class="wa-name">${m.name}</div>
+        <div class="wa-detail"><i class="fas fa-phone" style="font-size:10px"></i> ${m.phone} &nbsp;•&nbsp; <i class="fas fa-credit-card" style="font-size:10px"></i> ${m.plan.split(' - ')[0]} &nbsp;•&nbsp; ينتهي: ${fmtDate(m.endDate)}</div>
+      </div>
+      <span class="wa-status ${expired?'expired':'expiring'}">${expired?'منتهي':'متبقي '+dl+' يوم'}</span>
+      <button class="btn btn-success btn-sm no-print" style="margin-right:8px" onclick="sendWAOne('${m.id}')"><i class="fab fa-whatsapp"></i> إرسال</button>
+    </div>`;
+  }).join(''):`<div style="padding:40px;text-align:center;color:var(--text-muted)">
+    <i class="fas fa-check-circle" style="font-size:48px;color:var(--success);display:block;margin-bottom:12px"></i>
+    <div style="font-size:15px;font-weight:700">جميع الاشتراكات بخير! 🎉</div>
+    <div style="font-size:13px;margin-top:6px">لا توجد اشتراكات تحتاج إلى تنبيه الآن</div>
+  </div>`;
+}
+function buildWAMsg(m){
+  const dl=daysLeft(m.endDate);
+  const template=document.getElementById('wa-template')?.value||'';
+  if(template){
+    return template
+      .replace(/{name}/g,m.name)
+      .replace(/{days}/g,dl>0?dl:'انتهى')
+      .replace(/{date}/g,fmtDate(m.endDate))
+      .replace(/{greeting}/g,'مرحباً');
+  }
+  if(dl>0) return`مرحباً ${m.name} 👋\nعميلنا العزيز في X Gym 💪\nاشتراكك سينتهي خلال *${dl} يوم* بتاريخ ${fmtDate(m.endDate)} 📅\nللتجديد تواصل معنا الآن 🔥\n#X_Gym`;
+  return`مرحباً ${m.name} 👋\nعميلنا العزيز في X Gym 💪\nاشتراكك انتهى بتاريخ ${fmtDate(m.endDate)} 📅\nجدد الآن وابقَ في القمة! 🏆\n#X_Gym`;
+}
+function sendWAOne(id){
+  const m=members.find(x=>x.id===id); if(!m) return;
+  const msg=encodeURIComponent(buildWAMsg(m));
+  const phone=m.phone.replace(/\D/g,'').replace(/^0/,'20');
+  window.open(`https://wa.me/${phone}?text=${msg}`,'_blank');
+  showToast(`تم فتح واتساب لـ ${m.name}`,'t-info');
+}
+function sendAllWA(){
+  const list=members.filter(m=>getStatus(m)!=='active');
+  if(!list.length){showToast('لا يوجد أعضاء لإرسال تنبيه إليهم','t-warning');return;}
+  confirmAction('إرسال للجميع',`سيتم إرسال ${list.length} رسالة واتساب`,'📱',()=>{
+    list.forEach((m,i)=>setTimeout(()=>sendWAOne(m.id),i*600));
+  });
+}
+
+// ══════ SETTINGS ══════
+function renderSettings(){
+  const planRows=Object.entries(PLANS).map(([plan,{months,price}])=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
+      <div style="flex:1;font-size:13px">${plan.split(' - ')[0]}</div>
+      <div style="font-size:12px;color:var(--text-muted)">${months} شهر</div>
+      <div style="font-size:13px;color:var(--success);font-weight:700">${price} ج</div>
+    </div>`).join('');
+  document.getElementById('plans-settings').innerHTML=planRows+'<div style="font-size:11px;color:var(--text-muted);margin-top:10px"><i class="fas fa-info-circle"></i> لتعديل الخطط تواصل مع المطور</div>';
+}
+function saveSettings(){showToast('تم حفظ الإعدادات ✓');}
+function exportAllData(){
+  const data=JSON.stringify({members,attendance,payments,settings},null,2);
+  const b=new Blob([data],{type:'application/json'});
+  const u=URL.createObjectURL(b);
+  const a=document.createElement('a');a.href=u;a.download='xgym_backup_'+today()+'.json';a.click();
+  showToast('تم تصدير البيانات');
+}
+function importData(input){
+  const file=input.files[0]; if(!file) return;
+  const r=new FileReader();
+  r.onload=e=>{
+    try{
+      const d=JSON.parse(e.target.result);
+      if(d.members) members=d.members;
+      if(d.attendance) attendance=d.attendance;
+      if(d.payments) payments=d.payments;
+      save(); renderDashboard();
+      showToast('تم استيراد البيانات بنجاح ✓');
+    }catch{showToast('ملف غير صالح','t-error');}
+  };
+  r.readAsText(file);
+}
+function confirmClearData(){
+  confirmAction('مسح كل البيانات','سيتم حذف جميع الأعضاء والسجلات نهائياً! هذا الإجراء لا يمكن التراجع عنه.','🚨',()=>{
+    members=[];attendance=[];payments=[];save();renderDashboard();
+    showToast('تم مسح كل البيانات','t-error');
+  });
+}
+
+// ══════ CAMERA QR SCANNER ══════
+let camStream=null;
+let camRaf=null;
+let lastScan='';
+let lastScanTime=0;
+
+function startCamera(){
+  if(!navigator.mediaDevices?.getUserMedia){
+    showToast('الكاميرا غير مدعومة في هذا المتصفح','t-error');return;
+  }
+  // Request higher resolution for better QR detection
+  const constraints={
+    video:{
+      facingMode:'environment',
+      width:{ideal:1280,min:640},
+      height:{ideal:720,min:480},
+      focusMode:'continuous'
+    },
+    audio:false
+  };
+  navigator.mediaDevices.getUserMedia(constraints)
+    .then(stream=>{
+      camStream=stream;
+      const video=document.getElementById('cam-video');
+      video.srcObject=stream;
+      video.play();
+      document.getElementById('cam-placeholder').style.display='none';
+      document.getElementById('cam-wrap').style.display='block';
+      document.getElementById('cam-controls').style.display='block';
+      video.addEventListener('loadedmetadata',()=>{scanLoop();});
+      showToast('تم تشغيل الكاميرا 📷','t-info');
+    })
+    .catch(err=>{
+      console.error(err);
+      if(err.name==='NotAllowedError') showToast('تم رفض إذن الكاميرا','t-error');
+      else showToast('تعذر تشغيل الكاميرا','t-error');
+    });
+}
+
+function stopCamera(){
+  if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null;}
+  if(camRaf){clearTimeout(camRaf);cancelAnimationFrame(camRaf);camRaf=null;}
+  document.getElementById('cam-placeholder').style.display='block';
+  document.getElementById('cam-wrap').style.display='none';
+  document.getElementById('cam-controls').style.display='none';
+  showToast('تم إيقاف الكاميرا','t-warning');
+}
+
+function scanLoop(){
+  const video=document.getElementById('cam-video');
+  const canvas=document.getElementById('cam-canvas');
+  if(!camStream||video.readyState<2){camRaf=requestAnimationFrame(scanLoop);return;}
+  canvas.width=video.videoWidth||640;
+  canvas.height=video.videoHeight||480;
+  const ctx=canvas.getContext('2d',{willReadFrequently:true});
+  ctx.drawImage(video,0,0,canvas.width,canvas.height);
+  const imageData=ctx.getImageData(0,0,canvas.width,canvas.height);
+  // Try both normal and inverted for low-light environments
+  const code=jsQR&&jsQR(imageData.data,imageData.width,imageData.height,{
+    inversionAttempts:'attemptBoth'
+  });
+  if(code&&code.data){
+    const now=Date.now();
+    if(code.data!==lastScan||now-lastScanTime>4000){
+      lastScan=code.data;lastScanTime=now;
+      processScan(code.data);
+    }
+  }
+  // ~30fps is enough and more stable than rAF at 60fps
+  camRaf=setTimeout(()=>{camRaf=requestAnimationFrame(scanLoop);},33);
+}
+
+function processScan(raw){
+  const status=document.getElementById('cam-status');
+  status.textContent='✓ تم المسح!';status.className='cam-status found';
+  setTimeout(()=>{status.textContent='جاري البحث عن QR Code…';status.className='cam-status scanning';},2500);
+  // Accept plain XG-XXXXX or old XGYM:XG-XXXXX format
+  let qid=raw.trim().toUpperCase();
+  if(qid.startsWith('XGYM:')) qid=qid.split(':')[1]||qid;
+  const m=members.find(x=>x.id===qid);
+  const res=document.getElementById('scan-result');
+  if(!m){
+    res.innerHTML=`<div style="background:rgba(255,61,0,.08);border:1px solid var(--danger);border-radius:12px;padding:14px;text-align:center">
+      <i class="fas fa-times-circle" style="color:var(--danger);font-size:28px;display:block;margin-bottom:8px"></i>
+      <div style="font-size:14px;font-weight:700">لم يُعثر على عضو</div>
+      <div style="font-size:12px;color:var(--text-muted);margin-top:4px">${raw}</div>
+    </div>`;
+    showToast('عضو غير موجود','t-error');
+    setTimeout(()=>res.innerHTML='',3500);return;
+  }
+  toggleAtt(m.id);
+  const todayStr=today();
+  const checked=attendance.some(a=>a.memberId===m.id&&a.date===todayStr);
+  const st=getStatus(m);
+  res.innerHTML=`<div style="background:rgba(0,230,118,.08);border:1px solid var(--success);border-radius:12px;padding:18px;text-align:center">
+    <div class="avatar avatar-lg" style="margin:0 auto 10px;width:52px;height:52px;font-size:20px">${initials(m.name)}</div>
+    <div style="font-size:17px;font-weight:800">${m.name}</div>
+    <div style="font-size:12px;color:var(--text-muted);margin-top:4px">${m.id} • ${m.plan.split(' - ')[0]}</div>
+    <div style="margin-top:5px">${statusBadge(st)}</div>
+    <div style="color:var(--success);font-weight:700;margin-top:10px;font-size:15px"><i class="fas fa-check-circle"></i> ${checked?'تم تسجيل الحضور ✓':'تم إلغاء الحضور'}</div>
+    <div style="font-size:11px;color:var(--text-muted);margin-top:4px">${new Date().toLocaleTimeString('ar-EG')}</div>
+  </div>`;
+  setTimeout(()=>res.innerHTML='',5000);
+}
+
+// ══════ INIT ══════
+// مسح كل البيانات القديمة
+localStorage.removeItem('xg_members');
+localStorage.removeItem('xg_att');
+localStorage.removeItem('xg_payments');
+localStorage.removeItem('xg_settings');
+members=[]; attendance=[]; payments=[]; settings={};
+renderDashboard();
+</script>
+</body>
+</html>
