@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="X GYM">
-<link rel="manifest" id="pwa-manifest">
+<link rel="manifest" href="manifest.json"><link rel="manifest" id="pwa-manifest">
 <link rel="apple-touch-icon" id="pwa-icon-apple">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
@@ -3295,6 +3295,16 @@ function printBarcode(){
 
 })();
 <\/script>
+
+<script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then(r => console.log('SW registered'))
+      .catch(e => console.log('SW error', e));
+  });
+}
+</script>
 </body></html>`);
     w.document.close();
   });
