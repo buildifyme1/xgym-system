@@ -3175,136 +3175,6 @@ function printBarcode(){
       `<div style="font-size:18px;font-weight:700">${name}</div><div>${subLabel}</div>`}
       <\x73cript>window.onload=()=>{window.print();window.close();}<\/script>
     
-<script>
-// ============================================================
-// PWA — Manifest + Install Button (ملف واحد)
-// ============================================================
-
-(function(){
-
-  // ── 1. توليد أيقونة SVG ──
-  function makeIconSVG(size){
-    var s = size;
-    return '<svg xmlns="http://www.w3.org/2000/svg" width="'+s+'" height="'+s+'" viewBox="0 0 '+s+' '+s+'">'
-      + '<defs>'
-      + '<linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ffd060"/><stop offset="50%" stop-color="#f0bc3c"/><stop offset="100%" stop-color="#c9920e"/></linearGradient>'
-      + '<linearGradient id="g2" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#06080f"/><stop offset="100%" stop-color="#101525"/></linearGradient>'
-      + '</defs>'
-      + '<rect width="'+s+'" height="'+s+'" rx="'+(s*0.22)+'" fill="url(#g2)"/>'
-      + '<rect x="'+(s*0.03)+'" y="'+(s*0.03)+'" width="'+(s*0.94)+'" height="'+(s*0.94)+'" rx="'+(s*0.19)+'" fill="none" stroke="url(#g1)" stroke-width="'+(s*0.025)+'" opacity="0.6"/>'
-      + '<text x="50%" y="54%" font-family="Arial Black,sans-serif" font-size="'+(s*0.52)+'" font-weight="900" fill="url(#g1)" text-anchor="middle" dominant-baseline="middle">X</text>'
-      + '<rect x="'+(s*0.18)+'" y="'+(s*0.74)+'" width="'+(s*0.64)+'" height="'+(s*0.045)+'" rx="'+(s*0.022)+'" fill="url(#g1)" opacity="0.8"/>'
-      + '</svg>';
-  }
-
-  function svgToDataURL(svg){
-    return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
-  }
-
-  function svgToPngDataURL(svg, size){
-    return new Promise(function(resolve){
-      var img = new Image();
-      img.onload = function(){
-        var c = document.createElement('canvas');
-        c.width = c.height = size;
-        c.getContext('2d').drawImage(img, 0, 0, size, size);
-        resolve(c.toDataURL('image/png'));
-      };
-      img.onerror = function(){ resolve(svgToDataURL(svg)); };
-      img.src = svgToDataURL(svg);
-    });
-  }
-
-  // ── 2. توليد الـ Manifest ──
-  function registerManifest(){
-    var icon192svg = makeIconSVG(192);
-    var icon512svg = makeIconSVG(512);
-
-    Promise.all([
-      svgToPngDataURL(icon192svg, 192),
-      svgToPngDataURL(icon512svg, 512)
-    ]).then(function(pngs){
-      var png192 = pngs[0], png512 = pngs[1];
-
-      // Apple touch icon
-      var appleLink = document.getElementById('pwa-icon-apple');
-      if(appleLink){ appleLink.href = png192; }
-
-      var gymName = localStorage.getItem('xgym_gym_name') || 'X GYM';
-      var manifest = {
-        name: gymName + ' — نظام الإدارة',
-        short_name: gymName,
-        description: 'نظام إدارة الجيم المتكامل',
-        start_url: './',
-        display: 'standalone',
-        orientation: 'portrait-primary',
-        background_color: '#06080f',
-        theme_color: '#f0bc3c',
-        lang: 'ar',
-        dir: 'rtl',
-        icons: [
-          { src: png192, sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
-          { src: png512, sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
-        ]
-      };
-
-      var blob = new Blob([JSON.stringify(manifest)], {type:'application/manifest+json'});
-      var url  = URL.createObjectURL(blob);
-      var link = document.getElementById('pwa-manifest');
-      if(link){ link.href = url; }
-    });
-  }
-
-  // ── 3. زر "تثبيت التطبيق" ──
-  var _deferredPrompt = null;
-
-  window.addEventListener('beforeinstallprompt', function(e){
-    e.preventDefault();
-    _deferredPrompt = e;
-    var btn = document.getElementById('pwa-install-btn');
-    if(btn) btn.style.display = 'flex';
-  });
-
-  window.addEventListener('appinstalled', function(){
-    _deferredPrompt = null;
-    var btn = document.getElementById('pwa-install-btn');
-    if(btn) btn.style.display = 'none';
-    showNotif('تم تثبيت X GYM كتطبيق بنجاح!','success');
-  });
-
-  window.installPWA = function(){
-    if(!_deferredPrompt){
-      showNotif('افتح الموقع من Chrome أو Edge وانتظر ظهور زر التثبيت','warning');
-      return;
-    }
-    _deferredPrompt.prompt();
-    _deferredPrompt.userChoice.then(function(r){
-      if(r.outcome==='accepted') showNotif('جاري تثبيت التطبيق...','success');
-      _deferredPrompt = null;
-      var btn = document.getElementById('pwa-install-btn');
-      if(btn) btn.style.display = 'none';
-    });
-  };
-
-  // ── 4. تشغيل ──
-  if(document.readyState==='loading'){
-    document.addEventListener('DOMContentLoaded', registerManifest);
-  } else {
-    registerManifest();
-  }
-
-})();
-<\/script>
-
-<script>
-if('serviceWorker' in navigator){
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js')
-      .then(r => console.log('SW registered'))
-      .catch(e => console.log('SW error', e));
-  });
-}
-</script>
 </body></html>`);
     w.document.close();
   });
@@ -4582,25 +4452,6 @@ function _showSetup(){
 // Close modal on overlay click
 document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',function(e){if(e.target===this)this.classList.remove('open')}));
 </script>
-<!-- EXPIRY PANEL MODAL -->
-<div class="modal-overlay" id="expiry-panel-modal">
-  <div class="modal" style="width:580px;max-height:85vh">
-    <div class="close-btn" onclick="closeModal('expiry-panel-modal')"><i class="fas fa-times"></i></div>
-    <h3><i class="fas fa-bell" style="color:var(--gold);margin-left:8px"></i>تنبيهات الاشتراكات</h3>
-    <div class="modal-sub">الاشتراكات التي ستنتهي قريباً أو انتهت</div>
-
-    <!-- Tabs -->
-    <div style="display:flex;gap:8px;margin-bottom:18px">
-      <button class="btn btn-sm" id="exp-tab-2" onclick="switchExpTab(2)" style="background:rgba(224,60,60,0.15);color:var(--red);border:1px solid rgba(224,60,60,0.3)">خلال يومين <span id="exp-tab-2-count" style="background:var(--red);color:#fff;border-radius:8px;padding:1px 6px;margin-right:4px;font-size:10px">0</span></button>
-      <button class="btn btn-sm" id="exp-tab-7" onclick="switchExpTab(7)" style="background:rgba(245,200,66,0.1);color:var(--gold);border:1px solid rgba(245,200,66,0.2)">خلال 7 أيام <span id="exp-tab-7-count" style="background:var(--gold);color:#000;border-radius:8px;padding:1px 6px;margin-right:4px;font-size:10px">0</span></button>
-      <button class="btn btn-sm" id="exp-tab-0" onclick="switchExpTab(0)" style="background:rgba(74,158,255,0.1);color:var(--blue);border:1px solid rgba(74,158,255,0.2)">منتهية <span id="exp-tab-0-count" style="background:var(--blue);color:#fff;border-radius:8px;padding:1px 6px;margin-right:4px;font-size:10px">0</span></button>
-      <button class="btn btn-sm btn-green" onclick="sendBulkWhatsApp()" style="margin-right:auto"><i class="fab fa-whatsapp"></i>إرسال الكل</button>
-    </div>
-
-    <div id="expiry-list-container" style="max-height:50vh;overflow-y:auto"></div>
-  </div>
-</div>
-
 
 <script>
 // ============================================================
@@ -4722,6 +4573,34 @@ document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click
 
 })();
 </script>
+
+<script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('./sw.js')
+      .then(()=>console.log('SW ok'))
+      .catch(e=>console.warn('SW fail',e));
+  });
+}
+</script>
+<!-- EXPIRY PANEL MODAL -->
+<div class="modal-overlay" id="expiry-panel-modal">
+  <div class="modal" style="width:580px;max-height:85vh">
+    <div class="close-btn" onclick="closeModal('expiry-panel-modal')"><i class="fas fa-times"></i></div>
+    <h3><i class="fas fa-bell" style="color:var(--gold);margin-left:8px"></i>تنبيهات الاشتراكات</h3>
+    <div class="modal-sub">الاشتراكات التي ستنتهي قريباً أو انتهت</div>
+
+    <!-- Tabs -->
+    <div style="display:flex;gap:8px;margin-bottom:18px">
+      <button class="btn btn-sm" id="exp-tab-2" onclick="switchExpTab(2)" style="background:rgba(224,60,60,0.15);color:var(--red);border:1px solid rgba(224,60,60,0.3)">خلال يومين <span id="exp-tab-2-count" style="background:var(--red);color:#fff;border-radius:8px;padding:1px 6px;margin-right:4px;font-size:10px">0</span></button>
+      <button class="btn btn-sm" id="exp-tab-7" onclick="switchExpTab(7)" style="background:rgba(245,200,66,0.1);color:var(--gold);border:1px solid rgba(245,200,66,0.2)">خلال 7 أيام <span id="exp-tab-7-count" style="background:var(--gold);color:#000;border-radius:8px;padding:1px 6px;margin-right:4px;font-size:10px">0</span></button>
+      <button class="btn btn-sm" id="exp-tab-0" onclick="switchExpTab(0)" style="background:rgba(74,158,255,0.1);color:var(--blue);border:1px solid rgba(74,158,255,0.2)">منتهية <span id="exp-tab-0-count" style="background:var(--blue);color:#fff;border-radius:8px;padding:1px 6px;margin-right:4px;font-size:10px">0</span></button>
+      <button class="btn btn-sm btn-green" onclick="sendBulkWhatsApp()" style="margin-right:auto"><i class="fab fa-whatsapp"></i>إرسال الكل</button>
+    </div>
+
+    <div id="expiry-list-container" style="max-height:50vh;overflow-y:auto"></div>
+  </div>
+</div>
 </body>
 <!-- ===== GLOBAL SEARCH OVERLAY ===== -->
 <div class="gsearch-overlay" id="global-search-overlay" onclick="if(event.target===this)closeGlobalSearch()">
