@@ -852,7 +852,7 @@ body.role-receptionist .recep-hide{display:none!important}
   <div class="content" id="page-members">
     <div class="section-hdr">
       <h2><i class="fas fa-users" style="color:var(--gold);margin-left:8px"></i>إدارة الأعضاء</h2>
-      <div style="display:flex;gap:10px;align-items:center">
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
         <input class="form-input" id="member-search" placeholder="بحث عن عضو..." style="width:220px" oninput="filterMembers(this.value)">
         <select class="form-select" id="status-filter" onchange="filterMembers(document.getElementById('member-search').value)" style="width:140px">
           <option value="">كل الحالات</option>
@@ -860,9 +860,35 @@ body.role-receptionist .recep-hide{display:none!important}
           <option value="expired">منتهي</option>
           <option value="frozen">مجمد</option>
         </select>
+        <select class="form-select" id="gender-filter" onchange="filterMembers(document.getElementById('member-search').value)" style="width:120px">
+          <option value="">الكل</option>
+          <option value="male">رجالي</option>
+          <option value="female">سيدات</option>
+        </select>
         <button class="btn btn-gold" onclick="openAddMember()"><i class="fas fa-plus"></i>عضو جديد</button>
       </div>
     </div>
+
+    <!-- إحصائيات الأعضاء -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:20px">
+      <div class="kpi-card">
+        <div class="kpi-val" id="stats-total-members" style="color:var(--gold)">0</div>
+        <div class="kpi-label"><i class="fas fa-users" style="margin-left:4px"></i>إجمالي الأعضاء</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-val" id="stats-female-members" style="color:var(--cyan)">0</div>
+        <div class="kpi-label"><i class="fas fa-venus" style="margin-left:4px;color:var(--cyan)"></i>قسم السيدات</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-val" id="stats-male-members" style="color:var(--blue)">0</div>
+        <div class="kpi-label"><i class="fas fa-mars" style="margin-left:4px;color:var(--blue)"></i>القسم الرجالي</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-val" id="stats-active-members" style="color:var(--green)">0</div>
+        <div class="kpi-label"><i class="fas fa-check-circle" style="margin-left:4px;color:var(--green)"></i>أعضاء نشطين</div>
+      </div>
+    </div>
+
     <div class="members-grid" id="members-grid"></div>
   </div>
 
@@ -981,61 +1007,59 @@ body.role-receptionist .recep-hide{display:none!important}
     <!-- KPI CARDS -->
     <div class="report-kpi" id="reports-kpi" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr))"></div>
 
-    <!-- CHARTS ROW 1 -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title"><i class="fas fa-clock" style="color:var(--gold);margin-left:6px"></i>ساعات الذروة</div>
-          <span class="card-badge" id="peak-hour-badge">—</span>
-        </div>
-        <div id="peak-chart" style="display:flex;align-items:flex-end;gap:3px;height:120px;margin-top:8px"></div>
-        <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:10px;color:var(--text3)" id="peak-labels"></div>
+    <!-- CHART: ساعات الذروة -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-header">
+        <div class="card-title"><i class="fas fa-clock" style="color:var(--gold);margin-left:6px"></i>ساعات الذروة</div>
+        <span class="card-badge" id="peak-hour-badge">—</span>
       </div>
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title"><i class="fas fa-coins" style="color:var(--gold);margin-left:6px"></i>الإيرادات الشهرية</div>
-          <span class="card-badge" id="monthly-total-badge">—</span>
-        </div>
-        <div id="monthly-chart" style="display:flex;align-items:flex-end;gap:6px;height:120px;margin-top:8px"></div>
-        <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:10px;color:var(--text3)" id="monthly-labels"></div>
-      </div>
+      <div id="peak-chart" style="display:flex;align-items:flex-end;gap:4px;height:160px;margin-top:8px"></div>
+      <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:10px;color:var(--text3)" id="peak-labels"></div>
     </div>
 
-    <!-- CHARTS ROW 2 -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title"><i class="fas fa-calendar-week" style="color:var(--blue);margin-left:6px"></i>حضور أيام الأسبوع</div>
-        </div>
-        <div id="weekday-chart" style="display:flex;align-items:flex-end;gap:8px;height:110px;margin-top:8px"></div>
-        <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:10px;color:var(--text3)" id="weekday-labels"></div>
+    <!-- CHART: الإيرادات الشهرية -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-header">
+        <div class="card-title"><i class="fas fa-coins" style="color:var(--gold);margin-left:6px"></i>الإيرادات الشهرية</div>
+        <span class="card-badge" id="monthly-total-badge">—</span>
       </div>
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title"><i class="fas fa-id-card" style="color:var(--purple);margin-left:6px"></i>توزيع أنواع الاشتراكات</div>
-        </div>
-        <div id="sub-type-chart" style="margin-top:8px;display:flex;flex-direction:column;gap:8px"></div>
-      </div>
+      <div id="monthly-chart" style="display:flex;align-items:flex-end;gap:8px;height:160px;margin-top:8px"></div>
+      <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:10px;color:var(--text3)" id="monthly-labels"></div>
     </div>
 
-    <!-- TOP / ABSENT MEMBERS -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
-      <!-- الأكثر حضوراً -->
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title"><i class="fas fa-trophy" style="color:var(--gold);margin-left:6px"></i>الأعضاء الأكثر حضوراً</div>
-          <span class="card-badge" id="top-period-label">هذا الشهر</span>
-        </div>
-        <div id="top-members-list"></div>
+    <!-- CHART: حضور أيام الأسبوع -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-header">
+        <div class="card-title"><i class="fas fa-calendar-week" style="color:var(--blue);margin-left:6px"></i>حضور أيام الأسبوع</div>
       </div>
-      <!-- الأكثر غياباً -->
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title"><i class="fas fa-user-slash" style="color:var(--red);margin-left:6px"></i>الأعضاء الأكثر غياباً</div>
-          <span class="card-badge" style="background:rgba(224,60,60,0.1);color:var(--red)" id="absent-period-label">هذا الشهر</span>
-        </div>
-        <div id="absent-members-list"></div>
+      <div id="weekday-chart" style="display:flex;align-items:flex-end;gap:10px;height:160px;margin-top:8px"></div>
+      <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:10px;color:var(--text3)" id="weekday-labels"></div>
+    </div>
+
+    <!-- CHART: توزيع أنواع الاشتراكات -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-header">
+        <div class="card-title"><i class="fas fa-id-card" style="color:var(--purple);margin-left:6px"></i>توزيع أنواع الاشتراكات</div>
       </div>
+      <div id="sub-type-chart" style="margin-top:8px;display:flex;flex-direction:column;gap:10px"></div>
+    </div>
+
+    <!-- CHART: الأعضاء الأكثر حضوراً -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-header">
+        <div class="card-title"><i class="fas fa-trophy" style="color:var(--gold);margin-left:6px"></i>الأعضاء الأكثر حضوراً</div>
+        <span class="card-badge" id="top-period-label">هذا الشهر</span>
+      </div>
+      <div id="top-members-list"></div>
+    </div>
+
+    <!-- CHART: الأعضاء الأكثر غياباً -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-header">
+        <div class="card-title"><i class="fas fa-user-slash" style="color:var(--red);margin-left:6px"></i>الأعضاء الأكثر غياباً</div>
+        <span class="card-badge" style="background:rgba(224,60,60,0.1);color:var(--red)" id="absent-period-label">هذا الشهر</span>
+      </div>
+      <div id="absent-members-list"></div>
     </div>
 
     <!-- ATTENDANCE HEATMAP (last 30 days) -->
@@ -2131,45 +2155,90 @@ function renderMembers(){
 
 function filterMembers(q){
   const statusF=document.getElementById('status-filter').value;
+  const genderF=document.getElementById('gender-filter').value;
   const filtered=members.filter(m=>{
     const matchQ=!q||m.name.includes(q)||m.id.includes(q)||m.phone.includes(q);
     const matchS=!statusF||m.status===statusF;
-    return matchQ&&matchS;
+    const matchG=!genderF||m.gender===genderF;
+    return matchQ&&matchS&&matchG;
   });
+  
+  // تحديث الإحصائيات
+  const totalMembers=members.length;
+  const femaleMembers=members.filter(m=>m.gender==='female').length;
+  const maleMembers=members.filter(m=>m.gender==='male').length;
+  const activeMembers=members.filter(m=>m.status==='active').length;
+  
+  document.getElementById('stats-total-members').textContent=totalMembers;
+  document.getElementById('stats-female-members').textContent=femaleMembers;
+  document.getElementById('stats-male-members').textContent=maleMembers;
+  document.getElementById('stats-active-members').textContent=activeMembers;
+  
   const grid=document.getElementById('members-grid');
   if(!filtered.length){grid.innerHTML='<div class="empty-state" style="grid-column:1/-1"><i class="fas fa-search"></i><p>لا توجد نتائج</p></div>';return;}
-  grid.innerHTML=filtered.map(m=>{
-    const pct=Math.min(100,Math.max(0,(m.days/30)*100));
-    const stColors={active:'var(--green)',expired:'var(--red)',frozen:'var(--blue)',pending:'var(--gold)'};
-    const stClass={active:'active',expired:'expired',frozen:'frozen',pending:'pending'};
-    return`<div class="member-card" onclick="viewMember('${m.id}')">
-      <div class="mc-top">
-        <div class="mc-avatar" style="background:${AVATAR_COLORS[m.ci]};color:${AVATAR_TEXT[m.ci]}">${m.name.split(' ').map(w=>w[0]).join('')}</div>
-        <div style="flex:1">
-          <div class="mc-name">${m.name}</div>
-          <div class="mc-id">${m.id}${m.discountAmount>0?` <span style="font-size:9px;background:rgba(232,66,62,0.12);color:var(--red);padding:1px 5px;border-radius:4px;margin-right:4px">خصم ${m.discountAmount.toLocaleString()} ج</span>`:''}
-          </div>
-        </div>
-        <span class="tag ${stClass[m.status]||'pending'}">${m.status==='active'?'نشط':m.status==='expired'?'منتهي':m.status==='frozen'?'مجمد':'معلق'}</span>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:11px;color:var(--text2)">
-        <div><i class="fas fa-id-card" style="margin-left:4px;color:var(--text3)"></i>${priceNames[m.type]||m.type}</div>
-        <div><i class="fas fa-phone" style="margin-left:4px;color:var(--text3)"></i>${m.phone}</div>
-        <div><i class="fas fa-calendar" style="margin-left:4px;color:var(--text3)"></i>ينتهي: ${m.end}</div>
-        <div><i class="fas fa-clock" style="margin-left:4px;color:var(--text3)"></i>${m.days} يوم متبقي</div>
-      </div>
-      <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:${pct>50?'var(--green)':pct>20?'var(--gold)':'var(--red)'}"></div></div>
-      <div style="display:flex;gap:6px;margin-top:12px;flex-wrap:wrap">
-        <button class="btn btn-sm btn-outline" style="flex:1" onclick="event.stopPropagation();sendWA('${m.phone}','${m.name}')"><i class="fab fa-whatsapp" style="color:#25d366"></i>واتساب</button>
-        <button class="btn btn-sm btn-outline" onclick="event.stopPropagation();openRenewModal('${m.id}')"><i class="fas fa-rotate"></i>تجديد</button>
-        <button class="btn btn-sm" style="background:rgba(74,158,255,0.1);color:var(--blue);border:1px solid rgba(74,158,255,0.2)" onclick="event.stopPropagation();openFreezeModal('${m.id}')" title="تجميد"><i class="fas fa-snowflake"></i></button>
-        <button class="btn btn-sm" style="background:rgba(155,89,182,0.1);color:var(--purple);border:1px solid rgba(155,89,182,0.2)" onclick="event.stopPropagation();openMemberHistory('${m.id}')" title="السجل"><i class="fas fa-history"></i></button>
-        <button class="btn btn-sm" style="background:rgba(245,200,66,0.1);color:var(--gold);border:1px solid rgba(245,200,66,0.2)" onclick="event.stopPropagation();viewMember('${m.id}')"><i class="fas fa-barcode"></i></button>
-        <button class="btn btn-sm" style="background:rgba(46,204,113,0.1);color:var(--green);border:1px solid rgba(46,204,113,0.2)" onclick="event.stopPropagation();openReceiptModal('${m.id}')" title="إيصال"><i class="fas fa-receipt"></i></button>
-        <button class="btn btn-sm" style="background:var(--bg4);color:var(--text2);border:1px solid var(--border)" onclick="event.stopPropagation();openEditMember('${m.id}')"><i class="fas fa-pen"></i></button>
+  
+  // تقسيم الأعضاء إلى نساء ورجال
+  const females=filtered.filter(m=>m.gender==='female');
+  const males=filtered.filter(m=>m.gender==='male');
+  
+  let html='';
+  
+  // قسم السيدات
+  if(females.length>0){
+    html+=`<div style="grid-column:1/-1;margin-top:20px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;padding-bottom:12px;border-bottom:2px solid rgba(31,200,208,0.2)">
+        <i class="fas fa-venus" style="font-size:18px;color:var(--cyan)"></i>
+        <h3 style="font-size:15px;color:var(--cyan);margin:0">قسم السيدات — ${females.length} عضوة</h3>
       </div>
     </div>`;
-  }).join('');
+    html+=females.map(m=>renderMemberCard(m)).join('');
+  }
+  
+  // القسم الرجالي
+  if(males.length>0){
+    html+=`<div style="grid-column:1/-1;margin-top:20px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;padding-bottom:12px;border-bottom:2px solid rgba(61,143,245,0.2)">
+        <i class="fas fa-mars" style="font-size:18px;color:var(--blue)"></i>
+        <h3 style="font-size:15px;color:var(--blue);margin:0">القسم الرجالي — ${males.length} عضو</h3>
+      </div>
+    </div>`;
+    html+=males.map(m=>renderMemberCard(m)).join('');
+  }
+  
+  grid.innerHTML=html;
+}
+
+function renderMemberCard(m){
+  const pct=Math.min(100,Math.max(0,(m.days/30)*100));
+  const stColors={active:'var(--green)',expired:'var(--red)',frozen:'var(--blue)',pending:'var(--gold)'};
+  const stClass={active:'active',expired:'expired',frozen:'frozen',pending:'pending'};
+  return`<div class="member-card" onclick="viewMember('${m.id}')">
+    <div class="mc-top">
+      <div class="mc-avatar" style="background:${AVATAR_COLORS[m.ci]};color:${AVATAR_TEXT[m.ci]}">${m.name.split(' ').map(w=>w[0]).join('')}</div>
+      <div style="flex:1">
+        <div class="mc-name">${m.name} <span style="font-size:10px;color:var(--text3);margin-right:4px">${m.gender==='female'?'👩':'👨'}</span></div>
+        <div class="mc-id">${m.id}${m.discountAmount>0?` <span style="font-size:9px;background:rgba(232,66,62,0.12);color:var(--red);padding:1px 5px;border-radius:4px;margin-right:4px">خصم ${m.discountAmount.toLocaleString()} ج</span>`:''}
+        </div>
+      </div>
+      <span class="tag ${stClass[m.status]||'pending'}">${m.status==='active'?'نشط':m.status==='expired'?'منتهي':m.status==='frozen'?'مجمد':'معلق'}</span>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:11px;color:var(--text2)">
+      <div><i class="fas fa-id-card" style="margin-left:4px;color:var(--text3)"></i>${priceNames[m.type]||m.type}</div>
+      <div><i class="fas fa-phone" style="margin-left:4px;color:var(--text3)"></i>${m.phone}</div>
+      <div><i class="fas fa-calendar" style="margin-left:4px;color:var(--text3)"></i>ينتهي: ${m.end}</div>
+      <div><i class="fas fa-clock" style="margin-left:4px;color:var(--text3)"></i>${m.days} يوم متبقي</div>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:${pct>50?'var(--green)':pct>20?'var(--gold)':'var(--red)'}"></div></div>
+    <div style="display:flex;gap:6px;margin-top:12px;flex-wrap:wrap">
+      <button class="btn btn-sm btn-outline" style="flex:1" onclick="event.stopPropagation();sendWA('${m.phone}','${m.name}')"><i class="fab fa-whatsapp" style="color:#25d366"></i>واتساب</button>
+      <button class="btn btn-sm btn-outline" onclick="event.stopPropagation();openRenewModal('${m.id}')"><i class="fas fa-rotate"></i>تجديد</button>
+      <button class="btn btn-sm" style="background:rgba(74,158,255,0.1);color:var(--blue);border:1px solid rgba(74,158,255,0.2)" onclick="event.stopPropagation();openFreezeModal('${m.id}')" title="تجميد"><i class="fas fa-snowflake"></i></button>
+      <button class="btn btn-sm" style="background:rgba(155,89,182,0.1);color:var(--purple);border:1px solid rgba(155,89,182,0.2)" onclick="event.stopPropagation();openMemberHistory('${m.id}')" title="السجل"><i class="fas fa-history"></i></button>
+      <button class="btn btn-sm" style="background:rgba(245,200,66,0.1);color:var(--gold);border:1px solid rgba(245,200,66,0.2)" onclick="event.stopPropagation();viewMember('${m.id}')"><i class="fas fa-barcode"></i></button>
+      <button class="btn btn-sm" style="background:rgba(46,204,113,0.1);color:var(--green);border:1px solid rgba(46,204,113,0.2)" onclick="event.stopPropagation();openReceiptModal('${m.id}')" title="إيصال"><i class="fas fa-receipt"></i></button>
+      <button class="btn btn-sm" style="background:var(--bg4);color:var(--text2);border:1px solid var(--border)" onclick="event.stopPropagation();openEditMember('${m.id}')"><i class="fas fa-pen"></i></button>
+    </div>
+  </div>`;
 }
 
 
@@ -2360,11 +2429,13 @@ function renderReports(){
   const peakHour=hourLabels[hvals.indexOf(Math.max(...hvals))];
   const phBadge=document.getElementById('peak-hour-badge');
   if(phBadge)phBadge.textContent=hvals.some(v=>v>0)?`ذروة الساعة ${peakHour}:00`:'لا بيانات';
-  document.getElementById('peak-chart').innerHTML=hvals.map((v,i)=>`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px">
-    ${v>0?`<div style="font-size:8px;color:var(--text3)">${v}</div>`:''}
-    <div style="width:100%;height:${Math.max((v/hmx)*100,v>0?6:2)}%;background:${v===hmx&&v>0?'var(--gold)':'rgba(245,200,66,0.3)'};border-radius:3px 3px 0 0;transition:.3s" title="${v} شخص الساعة ${hourLabels[i]}"></div>
+  document.getElementById('peak-chart').innerHTML=hvals.map((v,i)=>`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px">
+    <div style="font-size:9px;color:${v===hmx&&v>0?'var(--gold)':'var(--text3)'};font-weight:700;min-height:14px">${v>0?v:''}</div>
+    <div style="width:100%;flex:1;display:flex;align-items:flex-end">
+      <div style="width:100%;height:${Math.max((v/hmx)*100,v>0?5:2)}%;background:${v===hmx&&v>0?'linear-gradient(180deg,var(--gold3),var(--gold2))':'rgba(245,200,66,0.28)'};border-radius:4px 4px 0 0;transition:.4s cubic-bezier(.4,0,.2,1);min-height:${v>0?'8px':'3px'}" title="${v} شخص الساعة ${hourLabels[i]}:00"></div>
+    </div>
   </div>`).join('');
-  document.getElementById('peak-labels').innerHTML=hourLabels.filter((_,i)=>i%3===0).map(h=>`<span>${h}</span>`).join('');
+  document.getElementById('peak-labels').innerHTML=hourLabels.map((h,i)=>`<span style="font-size:${i%2===0?'10':'9'}px;opacity:${i%2===0?1:0.5}">${h}</span>`).join('');
 
   // الإيرادات الشهرية
   const monthsData=[];
@@ -2378,22 +2449,26 @@ function renderReports(){
   const mmx=Math.max(...monthsData.map(m=>m.val),1);
   const mtBadge=document.getElementById('monthly-total-badge');
   if(mtBadge)mtBadge.textContent=(monthsData[6].val>=1000?(monthsData[6].val/1000).toFixed(1)+'k':monthsData[6].val||0)+' ج هذا الشهر';
-  document.getElementById('monthly-chart').innerHTML=monthsData.map(m=>`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px">
-    ${m.val>0?`<div style="font-size:8px;color:var(--text3)">${m.val>=1000?(m.val/1000).toFixed(1)+'k':m.val}</div>`:''}
-    <div style="width:100%;height:${Math.max((m.val/mmx)*100,m.val>0?6:2)}%;background:${m.current?'var(--gold)':'var(--blue)'};border-radius:3px 3px 0 0;opacity:${m.current?1:0.55};transition:.3s" title="${m.val.toLocaleString()} ج — ${m.label}"></div>
+  document.getElementById('monthly-chart').innerHTML=monthsData.map(m=>`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px">
+    <div style="font-size:9px;color:${m.current?'var(--gold)':'var(--text3)'};font-weight:700;min-height:14px">${m.val>0?(m.val>=1000?(m.val/1000).toFixed(1)+'k':m.val):''}</div>
+    <div style="width:100%;flex:1;display:flex;align-items:flex-end">
+      <div style="width:100%;height:${Math.max((m.val/mmx)*100,m.val>0?5:2)}%;background:${m.current?'linear-gradient(180deg,var(--gold3),var(--gold2))':'linear-gradient(180deg,rgba(74,158,255,0.7),rgba(74,158,255,0.4))'};border-radius:4px 4px 0 0;transition:.4s cubic-bezier(.4,0,.2,1);min-height:${m.val>0?'8px':'3px'}" title="${m.val.toLocaleString()} ج — ${m.label}"></div>
+    </div>
   </div>`).join('');
-  document.getElementById('monthly-labels').innerHTML=monthsData.map(m=>`<span>${m.label.slice(0,3)}</span>`).join('');
+  document.getElementById('monthly-labels').innerHTML=monthsData.map(m=>`<span style="font-size:10px;font-weight:${m.current?700:400};color:${m.current?'var(--gold)':'var(--text3)'}">${m.label.slice(0,3)}</span>`).join('');
 
   // حضور أيام الأسبوع
   const wdShort=['أحد','إثن','ثلا','أرب','خمس','جمع','سبت'];
   const wdNames=['الأحد','الإثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
   const wdVals=wdNames.map((_,i)=>periodAtt.filter(a=>new Date(a.time).getDay()===i).length);
   const wdMax=Math.max(...wdVals,1);
-  document.getElementById('weekday-chart').innerHTML=wdVals.map((v,i)=>`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px">
-    ${v>0?`<div style="font-size:9px;color:var(--text3)">${v}</div>`:''}
-    <div style="width:100%;height:${Math.max((v/wdMax)*100,v>0?6:2)}%;background:${v===Math.max(...wdVals)&&v>0?'var(--blue)':'rgba(74,158,255,0.35)'};border-radius:3px 3px 0 0;transition:.3s" title="${v} زيارة يوم ${wdNames[i]}"></div>
+  document.getElementById('weekday-chart').innerHTML=wdVals.map((v,i)=>`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px">
+    <div style="font-size:10px;color:${v===Math.max(...wdVals)&&v>0?'var(--blue)':'var(--text3)'};font-weight:700;min-height:16px">${v>0?v:''}</div>
+    <div style="width:100%;flex:1;display:flex;align-items:flex-end">
+      <div style="width:100%;height:${Math.max((v/wdMax)*100,v>0?5:2)}%;background:${v===Math.max(...wdVals)&&v>0?'linear-gradient(180deg,#6ab4ff,var(--blue))':'rgba(74,158,255,0.3)'};border-radius:4px 4px 0 0;transition:.4s cubic-bezier(.4,0,.2,1);min-height:${v>0?'8px':'3px'}" title="${v} زيارة يوم ${wdNames[i]}"></div>
+    </div>
   </div>`).join('');
-  document.getElementById('weekday-labels').innerHTML=wdShort.map(d=>`<span>${d}</span>`).join('');
+  document.getElementById('weekday-labels').innerHTML=wdShort.map((d,i)=>`<span style="font-size:11px;font-weight:${wdVals[i]===Math.max(...wdVals)&&wdVals[i]>0?700:400};color:${wdVals[i]===Math.max(...wdVals)&&wdVals[i]>0?'var(--blue)':'var(--text3)'}">${d}</span>`).join('');
 
   // توزيع أنواع الاشتراكات
   const subCount={};
@@ -2402,13 +2477,14 @@ function renderReports(){
   const subMax=Math.max(...subEntries.map(e=>e[1]),1);
   const subColors=['var(--gold)','var(--blue)','var(--green)','var(--purple)','var(--red)'];
   document.getElementById('sub-type-chart').innerHTML=subEntries.length?subEntries.map(([k,v],i)=>`
-    <div style="display:flex;align-items:center;gap:8px">
-      <div style="width:8px;height:8px;border-radius:50%;background:${subColors[i%5]};flex-shrink:0"></div>
-      <div style="flex:1;font-size:12px;color:var(--text2);min-width:80px">${priceNames[k]||k}</div>
-      <div style="flex:2;height:6px;background:var(--bg4);border-radius:3px;overflow:hidden">
-        <div style="width:${(v/subMax)*100}%;height:100%;background:${subColors[i%5]};border-radius:3px;transition:.4s"></div>
+    <div style="display:flex;align-items:center;gap:12px;padding:6px 0">
+      <div style="width:10px;height:10px;border-radius:50%;background:${subColors[i%5]};flex-shrink:0;box-shadow:0 0 8px ${subColors[i%5]}66"></div>
+      <div style="min-width:110px;font-size:13px;font-weight:700;color:var(--text)">${priceNames[k]||k}</div>
+      <div style="flex:1;height:10px;background:var(--bg4);border-radius:5px;overflow:hidden">
+        <div style="width:${(v/subMax)*100}%;height:100%;background:${subColors[i%5]};border-radius:5px;transition:.5s cubic-bezier(.4,0,.2,1)"></div>
       </div>
-      <div style="font-size:12px;font-weight:700;min-width:20px;text-align:left">${v}</div>
+      <div style="font-size:13px;font-weight:900;color:${subColors[i%5]};font-family:'Orbitron',monospace;min-width:28px;text-align:center">${v}</div>
+      <div style="font-size:11px;color:var(--text3);min-width:36px;text-align:left">${Math.round((v/members.length)*100)}%</div>
     </div>`).join(''):'<div style="color:var(--text3);font-size:12px;text-align:center;padding:20px">لا يوجد أعضاء</div>';
 
   // الأعضاء الأكثر حضوراً
