@@ -637,6 +637,8 @@ body.role-receptionist .recep-hide{display:none!important}
     <div class="nav-section admin-only">الإعدادات</div>
     <div class="nav-item admin-only" onclick="showPage('settings')"><i class="fas fa-gear"></i> الإعدادات</div>
     <div class="nav-item admin-only" id="sb-nav-btn" onclick="openSupabaseConfig()" style="margin-top:4px;border:1px dashed var(--border2);border-radius:8px;margin-right:8px;margin-left:8px;padding:10px 12px"><i class="fas fa-cloud-arrow-up" style="color:var(--text3)"></i><span style="font-size:11px;color:var(--text3)">ربط Supabase</span></div>
+    <div class="nav-item admin-only" onclick="forceSyncToSupabase()" title="رفع البيانات لـ Supabase" style="margin-top:2px;border-radius:8px;margin-right:8px;margin-left:8px;padding:8px 12px;background:rgba(39,199,112,0.06);border:1px solid rgba(39,199,112,0.15)"><i class="fas fa-cloud-arrow-up" style="color:var(--green)"></i><span style="font-size:11px;color:var(--green)">رفع للسحابة</span></div>
+    <div class="nav-item admin-only" onclick="forceSyncFromSupabase()" title="جلب البيانات من Supabase" style="margin-top:2px;border-radius:8px;margin-right:8px;margin-left:8px;padding:8px 12px;background:rgba(74,158,255,0.06);border:1px solid rgba(74,158,255,0.15)"><i class="fas fa-cloud-arrow-down" style="color:var(--blue)"></i><span style="font-size:11px;color:var(--blue)">جلب من السحابة</span></div>
   </nav>
   <div class="sidebar-footer">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
@@ -1520,9 +1522,9 @@ function togglePwEye(){
 
 // ===== TRIAL SYSTEM =====
 const TRIAL_KEY = 'xgym_trial_start';
-const TRIAL_DAYS = 6;
+const TRIAL_DAYS = 7;
 
-let _trialStart = '2026-06-13T00:00:00.000Z';
+let _trialStart = '2026-06-13T00:00:00.000Z'; // امبارح 13/6
 
 async function loadTrialFromSupabase(){
   try{
@@ -1582,7 +1584,7 @@ function renderTrialBanner(){
             <i class="fas fa-gift" style="margin-left:5px"></i>فترة تجريبية مجانية
           </div>
           <div style="font-size:11px;color:var(--text2);line-height:1.5">
-            فاضل <strong style="color:${urgentColor}">${remaining} ${remaining===1?'يوم':'أيام'}</strong> من <strong style="color:var(--text)">6</strong>
+            فاضل <strong style="color:${urgentColor}">${remaining} ${remaining===1?'يوم':'أيام'}</strong> من <strong style="color:var(--text)">7</strong>
             ${remaining <= 2 ? `<br><span style="color:var(--red);font-weight:700">⚠️ ${hoursLeft} ساعة فقط!</span>` : ''}
           </div>
           <div id="trial-countdown" style="font-size:10px;color:var(--text3);margin-top:4px;font-family:'Orbitron',monospace"></div>
@@ -3759,9 +3761,41 @@ function _recordAttendance(m){
   // تحديد نوع التسجيل التالي
   const type=(todayIn.length>todayOut.length)?'out':'in';
 
-  // تحقق من الاشتراك
+  // تحقق من الاشتراك — منع دخول المنتهي اشتراكه نهائياً
   if(m.status==='expired'){
-    showNotif('⚠️ '+m.name+' — اشتراكه منتهي!','warning');
+    playBeep('error');
+    const resultEl=document.getElementById('scan-result');
+    resultEl.innerHTML=`
+      <div style="display:flex;align-items:center;gap:14px;animation:slideIn .3s ease">
+        <div class="att-avatar" style="background:#ff4444;color:#fff;width:50px;height:50px;font-size:17px">${m.name.split(' ').map(w=>w[0]).join('')}</div>
+        <div style="flex:1">
+          <div style="font-size:15px;font-weight:800">${m.name}</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px">${m.id} · ${priceNames[m.type]||m.type}</div>
+          <div style="margin-top:8px;background:rgba(224,60,60,0.12);border:1px solid rgba(224,60,60,0.35);border-radius:10px;padding:12px 14px">
+            <div style="font-size:14px;font-weight:900;color:var(--red)"><i class="fas fa-lock" style="margin-left:6px"></i>مرفوض — الاشتراك منتهي</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:5px">انتهى في: <b style="color:var(--red)">${m.end||'—'}</b></div>
+            <div style="font-size:11px;color:var(--text2);margin-top:4px;background:rgba(224,60,60,0.08);border-radius:6px;padding:6px 8px">
+              <i class="fas fa-triangle-exclamation" style="color:var(--gold);margin-left:4px"></i>
+              يجب تجديد الاشتراك للسماح بالدخول
+            </div>
+          </div>
+        </div>
+      </div>`;
+    resultEl.style.display='block';
+    resultEl.className='scan-result warning';
+    showNotif('🔴 '+m.name+' — مرفوض! الاشتراك منتهي','warning');
+    // فلاش الكاميرا
+    const flashName=document.getElementById('cam-flash-name');
+    const flashInfo=document.getElementById('cam-flash-info');
+    const flashResult=document.getElementById('cam-flash-result');
+    if(flashResult&&_attMode==='camera'){
+      if(flashName)flashName.textContent='🔴 '+m.name+' — مرفوض';
+      if(flashInfo)flashInfo.textContent='الاشتراك منتهي — يجب التجديد';
+      flashResult.style.background='linear-gradient(0deg,rgba(224,60,60,0.95),transparent)';
+      flashResult.style.display='block';
+      setTimeout(()=>{if(flashResult)flashResult.style.display='none';},4000);
+    }
+    return;
   }
 
   const record={id:m.id,name:m.name,ci:m.ci,type,time:now.toISOString()};
