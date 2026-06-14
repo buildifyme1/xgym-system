@@ -1722,7 +1722,7 @@ async function savePasswords(){
   USERS.admin.password=USERS.admin.password;
   USERS.reception.password=USERS.reception.password;
   await sbPushSettings();
-  localStorage.setItem('xgym_passwords',JSON.stringify({admin:USERS.admin.password,reception:USERS.reception.password}));
+  // passwords في Supabase فقط
 }
 
 function changePassword(target){
@@ -1897,10 +1897,10 @@ async function sbPushSettings(extra={}){
       {key:'xgym_passwords', value:{admin:USERS.admin.password, reception:USERS.reception.password}, updated_at:now},
     ];
     // بيانات الجيم
-    const gymName=localStorage.getItem('xgym_gym_name');
-    const gymPhone=localStorage.getItem('xgym_gym_phone');
-    const gymWa=localStorage.getItem('xgym_gym_wa');
-    const gymAddr=localStorage.getItem('xgym_gym_address');
+    const gymName=_gymName;
+    const gymPhone=_gymPhone;
+    const gymWa=_gymWa;
+    const gymAddr=_gymAddr;
     if(gymName)  rows.push({key:'xgym_gym_name',    value:gymName,  updated_at:now});
     if(gymPhone) rows.push({key:'xgym_gym_phone',   value:gymPhone, updated_at:now});
     if(gymWa)    rows.push({key:'xgym_gym_wa',      value:gymWa,    updated_at:now});
@@ -1987,17 +1987,17 @@ async function sbPullAll(){
         if(sMap.xgym_setup_done.admin_pw)  USERS.admin.password=sMap.xgym_setup_done.admin_pw;
         if(sMap.xgym_setup_done.recep_pw)  USERS.reception.password=sMap.xgym_setup_done.recep_pw;
         if(sMap.xgym_setup_done.gym_name){
-          localStorage.setItem('xgym_gym_name',sMap.xgym_setup_done.gym_name);
-          document.querySelectorAll('.logo-text').forEach(el=>el.textContent=sMap.xgym_setup_done.gym_name);
+          _gymName=sMap.xgym_setup_done.gym_name;
+          document.querySelectorAll('.logo-text').forEach(el=>el.textContent=_gymName);
         }
       }
-      if(sMap.xgym_gym_name && typeof sMap.xgym_gym_name==='string'){
-        localStorage.setItem('xgym_gym_name',sMap.xgym_gym_name);
-        document.querySelectorAll('.logo-text').forEach(el=>el.textContent=sMap.xgym_gym_name);
+      if(sMap.xgym_gym_name){
+        _gymName=typeof sMap.xgym_gym_name==='string'?sMap.xgym_gym_name:String(sMap.xgym_gym_name);
+        document.querySelectorAll('.logo-text').forEach(el=>el.textContent=_gymName);
       }
-      if(sMap.xgym_gym_phone) localStorage.setItem('xgym_gym_phone', typeof sMap.xgym_gym_phone==='string'?sMap.xgym_gym_phone:JSON.stringify(sMap.xgym_gym_phone).replace(/"/g,''));
-      if(sMap.xgym_gym_wa)    localStorage.setItem('xgym_gym_wa',    typeof sMap.xgym_gym_wa==='string'?sMap.xgym_gym_wa:JSON.stringify(sMap.xgym_gym_wa).replace(/"/g,''));
-      if(sMap.xgym_gym_address) localStorage.setItem('xgym_gym_address', typeof sMap.xgym_gym_address==='string'?sMap.xgym_gym_address:JSON.stringify(sMap.xgym_gym_address).replace(/"/g,''));
+      if(sMap.xgym_gym_phone) _gymPhone=typeof sMap.xgym_gym_phone==='string'?sMap.xgym_gym_phone:String(sMap.xgym_gym_phone);
+      if(sMap.xgym_gym_wa)    _gymWa=typeof sMap.xgym_gym_wa==='string'?sMap.xgym_gym_wa:String(sMap.xgym_gym_wa);
+      if(sMap.xgym_gym_address) _gymAddr=typeof sMap.xgym_gym_address==='string'?sMap.xgym_gym_address:String(sMap.xgym_gym_address);
       // تاريخ التريال
       if(sMap.trial_start) _trialStart = typeof sMap.trial_start==='string'?sMap.trial_start:JSON.stringify(sMap.trial_start).replace(/"/g,'');
     }
@@ -2013,18 +2013,7 @@ async function sbPullAll(){
 
 // حفظ محلي فقط بدون push لـ Supabase (لتجنب loop)
 function lsSave_local(){
-  try{
-    localStorage.setItem(LS_KEYS.members,JSON.stringify(members));
-    localStorage.setItem(LS_KEYS.transactions,JSON.stringify(transactions));
-    localStorage.setItem(LS_KEYS.attendance,JSON.stringify(attendance));
-    localStorage.setItem(LS_KEYS.prices,JSON.stringify(prices));
-    localStorage.setItem(LS_KEYS.durations,JSON.stringify(DURATIONS));
-    localStorage.setItem('xgym_price_names',JSON.stringify(priceNames));
-    localStorage.setItem(LS_KEYS.coupons,JSON.stringify(coupons));
-    localStorage.setItem(LS_KEYS.memberHistory,JSON.stringify(memberHistory));
-    localStorage.setItem('xgym_passwords',JSON.stringify({admin:USERS.admin.password,reception:USERS.reception.password}));
-    localStorage.setItem('xgym_last_save',new Date().toISOString());
-  }catch(e){console.warn('lsSave_local error:',e);}
+  // كل البيانات بتتحفظ في Supabase فقط — localStorage معطل للبيانات
 }
 
 // للتوافق مع الكود القديم
@@ -2043,41 +2032,21 @@ async function sbGet(key){
 const LS_KEYS={members:'xgym_members',transactions:'xgym_transactions',attendance:'xgym_attendance',prices:'xgym_prices',durations:'xgym_durations',coupons:'xgym_coupons',memberHistory:'xgym_member_history'};
 
 function lsSave(){
-  lsSave_local();
   const el=document.getElementById('save-indicator');
   if(el){el.textContent='✓ محفوظ';el.style.color='var(--green)';setTimeout(()=>{el.textContent='';},2000);}
-  // Push to Supabase (non-blocking)
-  if(_supabase)sbPushAll().catch(()=>{});
+  // Supabase فقط — لا localStorage للبيانات
+  if(_supabase) sbPushAll().catch(()=>{});
 }
 
 function lsLoad(){
-  try{
-    const m=localStorage.getItem(LS_KEYS.members);
-    const t=localStorage.getItem(LS_KEYS.transactions);
-    const a=localStorage.getItem(LS_KEYS.attendance);
-    const p=localStorage.getItem(LS_KEYS.prices);
-    const d=localStorage.getItem(LS_KEYS.durations);
-    const pn=localStorage.getItem('xgym_price_names');
-    const c=localStorage.getItem(LS_KEYS.coupons);
-    const mh=localStorage.getItem(LS_KEYS.memberHistory);
-    return{
-      members:m?JSON.parse(m):null,
-      transactions:t?JSON.parse(t):null,
-      attendance:a?JSON.parse(a):null,
-      prices:p?JSON.parse(p):null,
-      durations:d?JSON.parse(d):null,
-      priceNames:pn?JSON.parse(pn):null,
-      coupons:c?JSON.parse(c):null,
-      memberHistory:mh?JSON.parse(mh):null,
-    };
-  }catch(e){return{};}
+  // البيانات من Supabase فقط — مش من localStorage
+  return {};
 }
 
 function resetAllData(){
   if(!confirm('⚠️ هل أنت متأكد؟ سيتم حذف جميع البيانات والأعضاء والمعاملات نهائياً!'))return;
   if(!confirm('⚠️ تأكيد أخير — هذا الإجراء لا يمكن التراجع عنه!'))return;
-  Object.values(LS_KEYS).forEach(k=>localStorage.removeItem(k));
-  localStorage.removeItem('xgym_price_names');
+  // البيانات في Supabase — مسح الذاكرة فقط
   members=[];
   transactions={income:[],expense:[]};
   attendance=[];
@@ -3123,8 +3092,10 @@ function deleteMember(id){
 
 function renewMember(id){openRenewModal(id);}
 
-function getGymName(){return localStorage.getItem('xgym_gym_name')||'X GYM';}
-function getGymPhone(){return localStorage.getItem('xgym_gym_phone')||'';}
+// بيانات الجيم في الذاكرة (من Supabase)
+let _gymName='X GYM', _gymPhone='', _gymWa='', _gymAddr='';
+function getGymName(){return _gymName;}
+function getGymPhone(){return _gymPhone;}
 
 function sendWA(phone,name,customMsg){
   const gymName=getGymName();
@@ -3190,13 +3161,13 @@ function saveGymSettings(){
   const wa=document.getElementById('whatsapp-num')?.value.trim();
   const addr=document.getElementById('settings-gym-address')?.value.trim();
   if(name){
-    localStorage.setItem('xgym_gym_name',name);
+    _gymName=name;
     document.querySelectorAll('.logo-text').forEach(el=>el.textContent=name);
     if(_supabase)_supabase.from('xgym_settings').upsert({key:'xgym_gym_name',value:name,updated_at:new Date().toISOString()},{onConflict:'key'}).catch(()=>{});
   }
-  if(phone){ localStorage.setItem('xgym_gym_phone',phone); if(_supabase)_supabase.from('xgym_settings').upsert({key:'xgym_gym_phone',value:phone,updated_at:new Date().toISOString()},{onConflict:'key'}).catch(()=>{}); }
-  if(wa){ localStorage.setItem('xgym_gym_wa',wa); if(_supabase)_supabase.from('xgym_settings').upsert({key:'xgym_gym_wa',value:wa,updated_at:new Date().toISOString()},{onConflict:'key'}).catch(()=>{}); }
-  if(addr){ localStorage.setItem('xgym_gym_address',addr); if(_supabase)_supabase.from('xgym_settings').upsert({key:'xgym_gym_address',value:addr,updated_at:new Date().toISOString()},{onConflict:'key'}).catch(()=>{}); }
+  if(phone){ _gymPhone=phone; if(_supabase)_supabase.from('xgym_settings').upsert({key:'xgym_gym_phone',value:phone,updated_at:new Date().toISOString()},{onConflict:'key'}).catch(()=>{}); }
+  if(wa){ _gymWa=wa; if(_supabase)_supabase.from('xgym_settings').upsert({key:'xgym_gym_wa',value:wa,updated_at:new Date().toISOString()},{onConflict:'key'}).catch(()=>{}); }
+  if(addr){ _gymAddr=addr; if(_supabase)_supabase.from('xgym_settings').upsert({key:'xgym_gym_address',value:addr,updated_at:new Date().toISOString()},{onConflict:'key'}).catch(()=>{}); }
   showNotif('تم حفظ بيانات الجيم ✅','success');
 }
 
@@ -3207,8 +3178,10 @@ async function _loadGymSettingsUI(){
       const {data}=await _supabase.from('xgym_settings').select('key,value').in('key',['xgym_gym_name','xgym_gym_phone','xgym_gym_wa','xgym_gym_address']);
       if(data) data.forEach(r=>{
         const v=typeof r.value==='string'?r.value:JSON.stringify(r.value).replace(/"/g,'');
-        localStorage.setItem(r.key,v);
-        if(r.key==='xgym_gym_name') document.querySelectorAll('.logo-text').forEach(el=>el.textContent=v);
+        if(r.key==='xgym_gym_name'){_gymName=v;document.querySelectorAll('.logo-text').forEach(el=>el.textContent=v);}
+        else if(r.key==='xgym_gym_phone') _gymPhone=v;
+        else if(r.key==='xgym_gym_wa') _gymWa=v;
+        else if(r.key==='xgym_gym_address') _gymAddr=v;
       });
     }catch(e){}
   }
@@ -3216,10 +3189,10 @@ async function _loadGymSettingsUI(){
   const p=document.getElementById('gym-phone');
   const w=document.getElementById('whatsapp-num');
   const a=document.getElementById('settings-gym-address');
-  if(n) n.value=localStorage.getItem('xgym_gym_name')||'';
-  if(p) p.value=localStorage.getItem('xgym_gym_phone')||'';
-  if(w) w.value=localStorage.getItem('xgym_gym_wa')||'';
-  if(a) a.value=localStorage.getItem('xgym_gym_address')||'';
+  if(n) n.value=_gymName||'';
+  if(p) p.value=_gymPhone||'';
+  if(w) w.value=_gymWa||'';
+  if(a) a.value=_gymAddr||'';
 }
 
 const _origRenderPriceSettings=renderPriceSettings;
@@ -3351,7 +3324,7 @@ function sendBarcodeWhatsApp(){
   const m=members.find(x=>x.id===_currentBarcodeId);
   if(!m){showNotif('لم يتم العثور على العضو','warning');return;}
   const bc=m.barcode||m.id;
-  const gymName=localStorage.getItem('xgym_gym_name')||'X Gym';
+  const gymName=_gymName||'X GYM';
   const msg=
 `مرحباً ${m.name} 👋
 أهلاً بك في *${gymName}*!
@@ -3373,7 +3346,7 @@ function sendMemberCardWhatsApp(){
   const m=members.find(x=>x.id===_currentBarcodeId);
   if(!m){showNotif('لم يتم العثور على العضو','warning');return;}
   if(!m.phone){showNotif('لا يوجد رقم هاتف للعضو','warning');return;}
-  const gymName=localStorage.getItem('xgym_gym_name')||'X Gym';
+  const gymName=_gymName||'X GYM';
 
   getBarcodeDataURL().then(dataURL=>{
     // تحميل الكارت كصورة أولاً
@@ -4470,7 +4443,7 @@ function applyCouponCode(code){
 // ===== 7. النسخ الاحتياطي =====
 function openBackupModal(){renderLastSave();openModal('backup-modal');}
 function renderLastSave(){
-  const last=localStorage.getItem('xgym_last_save');
+  const last=null; // last save tracked in Supabase
   const el=document.getElementById('last-save-time');
   if(el&&last)el.textContent='آخر حفظ: '+new Date(last).toLocaleString('ar-EG');
   const mc=document.getElementById('backup-mem-count');
@@ -4603,9 +4576,9 @@ function doSetup(){
 
   USERS.admin.password=adminPw;
   USERS.reception.password=recepPw;
-  localStorage.setItem('xgym_gym_name',gymName);
+  _gymName=gymName;
+  document.querySelectorAll('.logo-text').forEach(el=>el.textContent=gymName);
   localStorage.setItem(SETUP_KEY,'1');
-  localStorage.setItem('xgym_passwords',JSON.stringify({admin:adminPw,reception:recepPw}));
   document.querySelectorAll('.logo-text,[data-gymname]').forEach(el=>el.textContent=gymName);
 
   // حفظ كل بيانات الإعداد في Supabase settings بـ key واحد
@@ -4619,7 +4592,7 @@ function doSetup(){
 
   showNotif('تم إنشاء الحساب بنجاح 🎉','success');
   // تسجيل بداية التريال عند أول إعداد
-  if(!localStorage.getItem(TRIAL_KEY)){ localStorage.setItem(TRIAL_KEY, new Date().toISOString()); }
+  // TRIAL_KEY مش محتاجه هنا — التريال من Supabase
   currentUser={role:'admin',label:'مدير النظام',avatar:gymName.charAt(0)||'م',username:'admin'};
   sessionStorage.setItem(AUTH_KEY,JSON.stringify(currentUser));
   document.getElementById('login-screen').classList.add('hidden');
@@ -4654,11 +4627,7 @@ updateTime();setInterval(updateTime,1000);
 (async()=>{
   showLoading('جاري الاتصال بـ Supabase...');
 
-  // 1. Load gym name from localStorage
-  try{const gn=localStorage.getItem('xgym_gym_name');if(gn)document.querySelectorAll('.logo-text').forEach(el=>el.textContent=gn);}catch(e){}
-
-  // 2. Load passwords from localStorage (fast fallback)
-  try{const lsPw=localStorage.getItem('xgym_passwords');if(lsPw){const p=JSON.parse(lsPw);if(p.admin)USERS.admin.password=p.admin;if(p.reception)USERS.reception.password=p.reception;}}catch(e){}
+  // 1 & 2. كل البيانات من Supabase — مش من localStorage
 
   // 3. Init Supabase client (sync, just creates client)
   const sbUrl=localStorage.getItem(SB_URL_KEY)||'https://hotheuohwywchcrydvxl.supabase.co';
@@ -4675,14 +4644,7 @@ updateTime();setInterval(updateTime,1000);
       if(pulled){
         // إذا في بيانات في Supabase، السيستم اتعمل قبل كده
         localStorage.setItem(SETUP_KEY,'1');
-        // حفظ كلمات المرور في localStorage
-        localStorage.setItem('xgym_passwords',JSON.stringify({admin:USERS.admin.password,reception:USERS.reception.password}));
-        // حفظ اسم الجيم لو موجود
-        const sbGymName=await sbGetSetting('xgym_gym_name');
-        if(sbGymName){
-          localStorage.setItem('xgym_gym_name',sbGymName);
-          document.querySelectorAll('.logo-text').forEach(el=>el.textContent=sbGymName);
-        }
+        // اسم الجيم اتحمل من sbPullAll في _gymName
       }
       const loginStatus=document.getElementById('login-sb-status');
       if(loginStatus){
@@ -4736,7 +4698,7 @@ function _decideSetupOrLogin(){
   const hasTransactions = transactions.income.length > 0 || transactions.expense.length > 0;
   if(pwChanged || hasMembers || hasTransactions){
     localStorage.setItem(SETUP_KEY,'1');
-    localStorage.setItem('xgym_passwords', JSON.stringify({admin:USERS.admin.password, reception:USERS.reception.password}));
+    // passwords في Supabase فقط
     _showLogin();
     return;
   }
@@ -4755,7 +4717,7 @@ function _decideSetupOrLogin(){
             localStorage.setItem('xgym_gym_name',data.value.gym_name);
             document.querySelectorAll('.logo-text').forEach(el=>el.textContent=data.value.gym_name);
           }
-          localStorage.setItem('xgym_passwords',JSON.stringify({admin:USERS.admin.password,reception:USERS.reception.password}));
+          // passwords في Supabase فقط
           _showLogin();
         } else {
           // أول مرة فعلاً
