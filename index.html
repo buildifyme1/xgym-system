@@ -1520,23 +1520,29 @@ function togglePwEye(){
 
 // ===== TRIAL SYSTEM =====
 const TRIAL_KEY = 'xgym_trial_start';
-const TRIAL_DAYS = 7;
+const TRIAL_DAYS = 6;
+
+let _trialStart = '2026-06-13T00:00:00.000Z';
+
+async function loadTrialFromSupabase(){
+  try{
+    if(!_supabase) return;
+    const {data} = await _supabase.from('xgym_settings').select('value').eq('key','trial_start').single();
+    if(data && data.value){
+      _trialStart = data.value;
+    } else {
+      await _supabase.from('xgym_settings').upsert({key:'trial_start', value:'2026-06-13T00:00:00.000Z'},{onConflict:'key'});
+    }
+  } catch(e){ console.warn('trial load:',e); }
+}
 
 function getTrialInfo(){
-  let start = localStorage.getItem(TRIAL_KEY);
-  if(!start){
-    // أول مرة — ابدأ من امبارح عشان يظهر "فاضل 6 من 7" فوراً
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    start = yesterday.toISOString();
-    localStorage.setItem(TRIAL_KEY, start);
-  }
+  const start = _trialStart || '2026-06-13T00:00:00.000Z';
   const startDate = new Date(start);
   const now = new Date();
   const diffMs = now - startDate;
   const diffDays = Math.floor(diffMs / (1000*60*60*24));
-  const remaining = Math.max(0, TRIAL_DAYS - diffDays - 1);
-  // Hours left today
+  const remaining = Math.max(0, TRIAL_DAYS - diffDays);
   const nextExpiry = new Date(startDate);
   nextExpiry.setDate(nextExpiry.getDate() + TRIAL_DAYS);
   const hoursLeft = Math.max(0, Math.ceil((nextExpiry - now) / (1000*60*60)));
@@ -1576,7 +1582,7 @@ function renderTrialBanner(){
             <i class="fas fa-gift" style="margin-left:5px"></i>فترة تجريبية مجانية
           </div>
           <div style="font-size:11px;color:var(--text2);line-height:1.5">
-            فاضل <strong style="color:${urgentColor}">${remaining} ${remaining===1?'يوم':'أيام'}</strong> من <strong style="color:var(--text)">7</strong>
+            فاضل <strong style="color:${urgentColor}">${remaining} ${remaining===1?'يوم':'أيام'}</strong> من <strong style="color:var(--text)">6</strong>
             ${remaining <= 2 ? `<br><span style="color:var(--red);font-weight:700">⚠️ ${hoursLeft} ساعة فقط!</span>` : ''}
           </div>
           <div id="trial-countdown" style="font-size:10px;color:var(--text3);margin-top:4px;font-family:'Orbitron',monospace"></div>
@@ -1884,10 +1890,21 @@ async function sbPushHistory(){
 async function sbPushSettings(extra={}){
   if(!_supabase)return;
   try{
+    const now=new Date().toISOString();
     const rows=[
-      {key:'xgym_passwords', value:{admin:USERS.admin.password, reception:USERS.reception.password}, updated_at:new Date().toISOString()},
-      ...Object.entries(extra).map(([k,v])=>({key:k,value:v,updated_at:new Date().toISOString()}))
+      {key:'xgym_passwords', value:{admin:USERS.admin.password, reception:USERS.reception.password}, updated_at:now},
     ];
+    // بيانات الجيم
+    const gymName=localStorage.getItem('xgym_gym_name');
+    const gymPhone=localStorage.getItem('xgym_gym_phone');
+    const gymWa=localStorage.getItem('xgym_gym_wa');
+    const gymAddr=localStorage.getItem('xgym_gym_address');
+    if(gymName)  rows.push({key:'xgym_gym_name',    value:gymName,  updated_at:now});
+    if(gymPhone) rows.push({key:'xgym_gym_phone',   value:gymPhone, updated_at:now});
+    if(gymWa)    rows.push({key:'xgym_gym_wa',      value:gymWa,    updated_at:now});
+    if(gymAddr)  rows.push({key:'xgym_gym_address', value:gymAddr,  updated_at:now});
+    // إضافات خارجية
+    Object.entries(extra).forEach(([k,v])=>rows.push({key:k,value:v,updated_at:now}));
     await _supabase.from('xgym_settings').upsert(rows,{onConflict:'key'});
   }catch(e){console.warn('sbPushSettings error:',e);}
 }
@@ -1976,6 +1993,11 @@ async function sbPullAll(){
         localStorage.setItem('xgym_gym_name',sMap.xgym_gym_name);
         document.querySelectorAll('.logo-text').forEach(el=>el.textContent=sMap.xgym_gym_name);
       }
+      if(sMap.xgym_gym_phone) localStorage.setItem('xgym_gym_phone', typeof sMap.xgym_gym_phone==='string'?sMap.xgym_gym_phone:JSON.stringify(sMap.xgym_gym_phone).replace(/"/g,''));
+      if(sMap.xgym_gym_wa)    localStorage.setItem('xgym_gym_wa',    typeof sMap.xgym_gym_wa==='string'?sMap.xgym_gym_wa:JSON.stringify(sMap.xgym_gym_wa).replace(/"/g,''));
+      if(sMap.xgym_gym_address) localStorage.setItem('xgym_gym_address', typeof sMap.xgym_gym_address==='string'?sMap.xgym_gym_address:JSON.stringify(sMap.xgym_gym_address).replace(/"/g,''));
+      // تاريخ التريال
+      if(sMap.trial_start) _trialStart = typeof sMap.trial_start==='string'?sMap.trial_start:JSON.stringify(sMap.trial_start).replace(/"/g,'');
     }
 
     // حفظ في localStorage
@@ -3170,13 +3192,24 @@ function saveGymSettings(){
     document.querySelectorAll('.logo-text').forEach(el=>el.textContent=name);
     if(_supabase)_supabase.from('xgym_settings').upsert({key:'xgym_gym_name',value:name,updated_at:new Date().toISOString()},{onConflict:'key'}).catch(()=>{});
   }
-  if(phone) localStorage.setItem('xgym_gym_phone',phone);
-  if(wa) localStorage.setItem('xgym_gym_wa',wa);
-  if(addr) localStorage.setItem('xgym_gym_address',addr);
+  if(phone){ localStorage.setItem('xgym_gym_phone',phone); if(_supabase)_supabase.from('xgym_settings').upsert({key:'xgym_gym_phone',value:phone,updated_at:new Date().toISOString()},{onConflict:'key'}).catch(()=>{}); }
+  if(wa){ localStorage.setItem('xgym_gym_wa',wa); if(_supabase)_supabase.from('xgym_settings').upsert({key:'xgym_gym_wa',value:wa,updated_at:new Date().toISOString()},{onConflict:'key'}).catch(()=>{}); }
+  if(addr){ localStorage.setItem('xgym_gym_address',addr); if(_supabase)_supabase.from('xgym_settings').upsert({key:'xgym_gym_address',value:addr,updated_at:new Date().toISOString()},{onConflict:'key'}).catch(()=>{}); }
   showNotif('تم حفظ بيانات الجيم ✅','success');
 }
 
-function _loadGymSettingsUI(){
+async function _loadGymSettingsUI(){
+  // تحديث من Supabase أولاً
+  if(_supabase){
+    try{
+      const {data}=await _supabase.from('xgym_settings').select('key,value').in('key',['xgym_gym_name','xgym_gym_phone','xgym_gym_wa','xgym_gym_address']);
+      if(data) data.forEach(r=>{
+        const v=typeof r.value==='string'?r.value:JSON.stringify(r.value).replace(/"/g,'');
+        localStorage.setItem(r.key,v);
+        if(r.key==='xgym_gym_name') document.querySelectorAll('.logo-text').forEach(el=>el.textContent=v);
+      });
+    }catch(e){}
+  }
   const n=document.getElementById('settings-gym-name');
   const p=document.getElementById('gym-phone');
   const w=document.getElementById('whatsapp-num');
@@ -4191,14 +4224,17 @@ function setBulkFilter(f){
   renderBulkRecipients();
 }
 
+let _selectedMembers=new Set();
+
 function renderBulkRecipients(){
-  const filter=_bulkFilter||document.getElementById('bulk-filter')?.value||'all';
+  const filter=_bulkFilter||'all';
   let list=members;
   if(filter==='expiring')list=members.filter(m=>m.status==='active'&&m.days<=7);
   else if(filter==='expired')list=members.filter(m=>m.status==='expired');
   else if(filter==='active')list=members.filter(m=>m.status==='active');
-  const countEl=document.getElementById('bulk-count');
-  if(countEl)countEl.textContent=list.length+' عضو';
+  // تحديث الـ selected بناءً على الفلتر الجديد
+  _selectedMembers=new Set(list.map(m=>m.id));
+  _updateBulkCount();
   const container=document.getElementById('bulk-recipients-list');
   if(!container)return;
   if(!list.length){
@@ -4207,15 +4243,63 @@ function renderBulkRecipients(){
   }
   container.innerHTML=list.map((m,i)=>{
     const stColor=m.status==='active'?'var(--green)':m.status==='expired'?'var(--red)':'var(--gold)';
-    return `<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--border);${i===list.length-1?'border:none':''}">
+    const checked=_selectedMembers.has(m.id)?'checked':'';
+    return `<div onclick="toggleMember('${m.id}',this)" style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--border);${i===list.length-1?'border:none':''};cursor:pointer;transition:background .15s" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">
+      <input type="checkbox" id="chk-${m.id}" ${checked} onclick="event.stopPropagation();toggleMember('${m.id}',this.closest('div'))" style="width:15px;height:15px;accent-color:var(--gold);cursor:pointer;flex-shrink:0">
       <div style="width:28px;height:28px;border-radius:8px;background:${AVATAR_COLORS[m.ci%5]};color:${AVATAR_TEXT[m.ci%5]};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">${m.name.split(' ').map(w=>w[0]).join('')}</div>
       <div style="flex:1;min-width:0">
         <div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${m.name}</div>
-        <div style="font-size:10px;color:var(--text3)">${m.phone}</div>
+        <div style="font-size:10px;color:var(--text3)">${m.phone||'لا يوجد رقم'}</div>
       </div>
-      <div style="font-size:10px;padding:2px 6px;border-radius:6px;font-weight:700;background:${stColor}22;color:${stColor};flex-shrink:0">${m.days>0?m.days+'يوم':'منتهي'}</div>
+      <div style="font-size:10px;padding:2px 6px;border-radius:6px;font-weight:700;background:${stColor}22;color:${stColor};flex-shrink:0">${m.days>0?m.days+' يوم':'منتهي'}</div>
     </div>`;
   }).join('');
+}
+
+function toggleMember(id, row){
+  if(_selectedMembers.has(id)){
+    _selectedMembers.delete(id);
+    if(row) row.style.background='';
+  } else {
+    _selectedMembers.add(id);
+  }
+  const chk=document.getElementById('chk-'+id);
+  if(chk) chk.checked=_selectedMembers.has(id);
+  _updateBulkCount();
+}
+
+function toggleSelectAll(){
+  const filter=_bulkFilter||'all';
+  let list=members;
+  if(filter==='expiring')list=members.filter(m=>m.status==='active'&&m.days<=7);
+  else if(filter==='expired')list=members.filter(m=>m.status==='expired');
+  else if(filter==='active')list=members.filter(m=>m.status==='active');
+  const allSelected=list.every(m=>_selectedMembers.has(m.id));
+  if(allSelected){
+    list.forEach(m=>{_selectedMembers.delete(m.id); const c=document.getElementById('chk-'+m.id); if(c)c.checked=false;});
+  } else {
+    list.forEach(m=>{_selectedMembers.add(m.id); const c=document.getElementById('chk-'+m.id); if(c)c.checked=true;});
+  }
+  _updateBulkCount();
+  _updateSelectAllBtn(list,allSelected);
+}
+
+function _updateSelectAllBtn(list,wasAll){
+  const btn=document.getElementById('select-all-btn');
+  if(!btn)return;
+  const nowAll=list.every(m=>_selectedMembers.has(m.id));
+  btn.innerHTML=nowAll?'<i class="fas fa-square-minus"></i> إلغاء تحديد الكل':'<i class="fas fa-check-square"></i> تحديد الكل';
+}
+
+function _updateBulkCount(){
+  const el=document.getElementById('bulk-count');
+  if(el) el.textContent=_selectedMembers.size+' عضو محدد';
+  const btn=document.getElementById('bulk-send-btn');
+  if(btn){
+    btn.innerHTML=`<i class="fab fa-whatsapp" style="font-size:16px"></i>إرسال لـ ${_selectedMembers.size} عضو`;
+    btn.disabled=_selectedMembers.size===0;
+    btn.style.opacity=_selectedMembers.size===0?'0.5':'1';
+  }
 }
 
 function previewBulkMsg(){
@@ -4250,16 +4334,10 @@ function insertMsgVar(v){
 function sendBulkWhatsApp(){
   const text=document.getElementById('msg-text-area')?.value?.trim()||'';
   if(!text){showNotif('اكتب رسالة أو اختر قالباً أولاً','warning');return;}
-  
-  const filter=_bulkFilter||'all';
-  let list=members;
-  if(filter==='expiring')list=members.filter(m=>m.status==='active'&&m.days<=7);
-  else if(filter==='expired')list=members.filter(m=>m.status==='expired');
-  else if(filter==='active')list=members.filter(m=>m.status==='active');
-  
+  if(!_selectedMembers||_selectedMembers.size===0){showNotif('لم تحدد أي عضو للإرسال','warning');return;}
+  const list=members.filter(m=>_selectedMembers.has(m.id));
   const validList=list.filter(m=>m.phone&&m.phone.replace(/[^0-9]/g,'').length>=10);
-  if(!validList.length){showNotif('لا يوجد أعضاء بأرقام هواتف صحيحة','warning');return;}
-  
+  if(!validList.length){showNotif('الأعضاء المحددون ليس لديهم أرقام صحيحة','warning');return;}
   if(!confirm(`سيتم فتح ${validList.length} محادثة واتساب.\nتأكد من السماح بالنوافذ المنبثقة في المتصفح.\n\nهل تريد المتابعة؟`))return;
   
   // إظهار شريط التقدم
@@ -4558,6 +4636,7 @@ updateTime();setInterval(updateTime,1000);
     showLoading('جاري تحميل البيانات من السحابة...');
     try{
       await loadPasswords();
+      await loadTrialFromSupabase();
       const pulled = await sbPullAll();
       if(pulled){
         // إذا في بيانات في Supabase، السيستم اتعمل قبل كده
@@ -4942,14 +5021,20 @@ if('serviceWorker' in navigator){
             <i class="fas fa-circle-xmark" style="display:block;font-size:16px;margin-bottom:3px;color:var(--red)"></i>المنتهية
           </div>
         </div>
-        <div id="bulk-recipients-list" style="max-height:240px;overflow-y:auto;border-radius:10px;border:1px solid var(--border)"></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <button id="select-all-btn" onclick="toggleSelectAll()" style="background:rgba(245,200,66,0.08);border:1px solid rgba(245,200,66,0.25);border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;color:var(--gold);cursor:pointer;font-family:inherit">
+            <i class="fas fa-check-square"></i> تحديد الكل
+          </button>
+          <span style="font-size:10px;color:var(--text3)">اضغط على العضو لتحديده/إلغائه</span>
+        </div>
+        <div id="bulk-recipients-list" style="max-height:220px;overflow-y:auto;border-radius:10px;border:1px solid var(--border)"></div>
       </div>
     </div>
 
     <!-- أزرار الإرسال -->
     <div style="display:flex;gap:10px;margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
       <button class="btn" style="flex:1;background:linear-gradient(135deg,#25d366,#128c7e);color:#fff;font-size:13px;padding:12px;justify-content:center" id="bulk-send-btn" onclick="sendBulkWhatsApp()">
-        <i class="fab fa-whatsapp" style="font-size:16px"></i>إرسال للجميع
+        <i class="fab fa-whatsapp" style="font-size:16px"></i>إرسال للمحددين
       </button>
       <button class="btn btn-sm" style="background:rgba(37,211,102,0.08);color:#25d366;border:1px solid rgba(37,211,102,0.2)" onclick="previewBulkMsg()" title="معاينة الرسالة">
         <i class="fas fa-eye"></i>معاينة
