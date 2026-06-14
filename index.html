@@ -388,6 +388,39 @@ tr:hover td{background:rgba(255,255,255,0.025)}
 /* LOGIN SCREEN */
 .login-screen{position:fixed;inset:0;background:var(--bg);z-index:99999;display:flex;align-items:center;justify-content:center;flex-direction:column}
 .login-screen.hidden{display:none}
+
+/* TRIAL BANNER */
+.trial-banner{
+  background:linear-gradient(135deg,rgba(240,188,60,0.12),rgba(240,188,60,0.06));
+  border:1px solid rgba(240,188,60,0.3);
+  border-radius:14px;padding:14px 18px;margin-bottom:20px;
+  display:flex;align-items:center;gap:12px;
+  animation:trialPulse 3s ease-in-out infinite;
+}
+@keyframes trialPulse{0%,100%{box-shadow:0 0 0 0 rgba(240,188,60,0.0)}50%{box-shadow:0 0 0 6px rgba(240,188,60,0.08)}}
+.trial-days-circle{
+  width:52px;height:52px;border-radius:50%;
+  background:linear-gradient(135deg,var(--gold3),var(--gold),var(--gold2));
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  flex-shrink:0;box-shadow:0 4px 16px rgba(240,188,60,0.4);
+}
+.trial-days-num{font-family:'Orbitron',monospace;font-weight:900;font-size:18px;color:#000;line-height:1}
+.trial-days-lbl{font-size:8px;color:#000;font-weight:700;opacity:.8}
+.trial-expired-banner{
+  background:linear-gradient(135deg,rgba(232,66,62,0.15),rgba(232,66,62,0.06));
+  border:1px solid rgba(232,66,62,0.4);
+  border-radius:14px;padding:22px 18px;margin-bottom:20px;text-align:center;
+  animation:expiredShake .5s ease;
+}
+@keyframes expiredShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.subscribe-btn{
+  width:100%;padding:14px;border-radius:12px;border:none;cursor:pointer;font-family:'Cairo',sans-serif;
+  background:linear-gradient(135deg,var(--gold3),var(--gold),var(--gold2));
+  color:#000;font-size:14px;font-weight:900;letter-spacing:.5px;
+  box-shadow:0 6px 24px rgba(240,188,60,0.35);
+  transition:.2s;display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.subscribe-btn:hover{opacity:.92;transform:translateY(-2px);box-shadow:0 10px 32px rgba(240,188,60,0.45)}
 .login-box{background:linear-gradient(145deg,var(--bg2),var(--bg));border:1px solid var(--border2);border-radius:26px;padding:40px;width:400px;max-width:95vw;box-shadow:0 32px 100px rgba(0,0,0,0.8),0 4px 24px rgba(0,0,0,0.5),0 0 0 1px rgba(255,255,255,0.03)}
 .login-logo{text-align:center;margin-bottom:32px}
 .login-logo-icon{width:64px;height:64px;background:linear-gradient(135deg,var(--gold),var(--gold2));border-radius:18px;display:inline-flex;align-items:center;justify-content:center;font-family:'Orbitron',monospace;font-weight:900;font-size:22px;color:#000;margin-bottom:12px}
@@ -506,6 +539,9 @@ body.role-receptionist .recep-hide{display:none!important}
       <h1>X GYM</h1>
       <p>نظام إدارة الجيم المتكامل</p>
     </div>
+
+    <!-- TRIAL BANNER -->
+    <div id="trial-banner" style="display:none"></div>
 
     <!-- SETUP PANEL (first time) -->
     <div id="setup-panel" style="display:none">
@@ -1482,12 +1518,113 @@ function togglePwEye(){
   inp.style.cssText+='position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text3);cursor:pointer';
 }
 
+// ===== TRIAL SYSTEM =====
+const TRIAL_KEY = 'xgym_trial_start';
+const TRIAL_DAYS = 7;
+
+function getTrialInfo(){
+  let start = localStorage.getItem(TRIAL_KEY);
+  if(!start){
+    // أول مرة — ابدأ من امبارح عشان يظهر "فاضل 6 من 7" فوراً
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    start = yesterday.toISOString();
+    localStorage.setItem(TRIAL_KEY, start);
+  }
+  const startDate = new Date(start);
+  const now = new Date();
+  const diffMs = now - startDate;
+  const diffDays = Math.floor(diffMs / (1000*60*60*24));
+  const remaining = Math.max(0, TRIAL_DAYS - diffDays - 1);
+  // Hours left today
+  const nextExpiry = new Date(startDate);
+  nextExpiry.setDate(nextExpiry.getDate() + TRIAL_DAYS);
+  const hoursLeft = Math.max(0, Math.ceil((nextExpiry - now) / (1000*60*60)));
+  return { remaining, expired: remaining === 0, hoursLeft, startDate };
+}
+
+function renderTrialBanner(){
+  const banner = document.getElementById('trial-banner');
+  if(!banner) return;
+  const { remaining, expired, hoursLeft } = getTrialInfo();
+  if(expired){
+    banner.style.display = 'block';
+    banner.innerHTML = `
+      <div class="trial-expired-banner">
+        <div style="font-size:28px;margin-bottom:8px">🔒</div>
+        <div style="font-size:16px;font-weight:900;color:var(--red);margin-bottom:6px">انتهت الفترة التجريبية</div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:16px;line-height:1.6">
+          انتهت فترة الـ ${TRIAL_DAYS} أيام المجانية<br>جدّد اشتراكك للاستمرار في استخدام النظام
+        </div>
+        <button class="subscribe-btn" onclick="openSubscribeLink()">
+          <i class="fas fa-crown"></i>
+          اشترك الآن لمواصلة الاستخدام
+        </button>
+      </div>`;
+  } else {
+    banner.style.display = 'block';
+    const urgentColor = remaining <= 2 ? 'var(--red)' : remaining <= 3 ? 'var(--gold)' : 'var(--green)';
+    const urgentBg = remaining <= 2 ? 'rgba(232,66,62,0.12)' : remaining <= 3 ? 'rgba(240,188,60,0.12)' : 'rgba(34,201,106,0.12)';
+    banner.innerHTML = `
+      <div class="trial-banner" style="background:${urgentBg};border-color:${urgentColor}33">
+        <div class="trial-days-circle" style="background:linear-gradient(135deg,${urgentColor},${urgentColor})">
+          <div class="trial-days-num">${remaining}</div>
+          <div class="trial-days-lbl">يوم</div>
+        </div>
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:800;color:${urgentColor};margin-bottom:3px">
+            <i class="fas fa-gift" style="margin-left:5px"></i>فترة تجريبية مجانية
+          </div>
+          <div style="font-size:11px;color:var(--text2);line-height:1.5">
+            فاضل <strong style="color:${urgentColor}">${remaining} ${remaining===1?'يوم':'أيام'}</strong> من <strong style="color:var(--text)">7</strong>
+            ${remaining <= 2 ? `<br><span style="color:var(--red);font-weight:700">⚠️ ${hoursLeft} ساعة فقط!</span>` : ''}
+          </div>
+          <div id="trial-countdown" style="font-size:10px;color:var(--text3);margin-top:4px;font-family:'Orbitron',monospace"></div>
+        </div>
+      </div>`;
+    // Start countdown timer
+    updateTrialCountdown();
+  }
+}
+
+function updateTrialCountdown(){
+  const el = document.getElementById('trial-countdown');
+  if(!el) return;
+  const { startDate } = getTrialInfo();
+  const expiry = new Date(startDate);
+  expiry.setDate(expiry.getDate() + TRIAL_DAYS);
+  const diff = expiry - new Date();
+  if(diff <= 0){ renderTrialBanner(); return; }
+  const h = Math.floor(diff/(1000*60*60));
+  const m = Math.floor((diff%(1000*60*60))/(1000*60));
+  const s = Math.floor((diff%(1000*60))/1000);
+  el.textContent = `⏱ ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  setTimeout(updateTrialCountdown, 1000);
+}
+
+function openSubscribeLink(){
+  // غيّر الرابط ده لرابط الاشتراك الخاص بيك
+  const msg = encodeURIComponent('مرحباً، أريد الاشتراك في نظام X GYM');
+  window.open('https://wa.me/201000000000?text=' + msg, '_blank');
+}
+// ========================
+
 function doLogin(){
   const pw=document.getElementById('login-password').value;
   const role=selectedLoginRole;
   const user=role==='admin'?USERS.admin:USERS.reception;
   const errEl=document.getElementById('login-error');
   const errMsg=document.getElementById('login-error-msg');
+
+  // فحص التريال أولاً
+  const trial = getTrialInfo();
+  if(trial.expired){
+    errEl.style.display='block';
+    errMsg.innerHTML='<i class="fas fa-lock" style="margin-left:4px"></i>انتهت الفترة التجريبية — يرجى الاشتراك للاستمرار';
+    document.getElementById('login-password').value='';
+    return;
+  }
+
   if(pw!==user.password){
     errEl.style.display='block';
     errMsg.textContent='كلمة المرور غلط، حاول تاني';
@@ -4369,6 +4506,8 @@ function doSetup(){
   }
 
   showNotif('تم إنشاء الحساب بنجاح 🎉','success');
+  // تسجيل بداية التريال عند أول إعداد
+  if(!localStorage.getItem(TRIAL_KEY)){ localStorage.setItem(TRIAL_KEY, new Date().toISOString()); }
   currentUser={role:'admin',label:'مدير النظام',avatar:gymName.charAt(0)||'م',username:'admin'};
   sessionStorage.setItem(AUTH_KEY,JSON.stringify(currentUser));
   document.getElementById('login-screen').classList.add('hidden');
@@ -4519,6 +4658,10 @@ function _decideSetupOrLogin(){
 function _showLogin(){
   document.getElementById('setup-panel').style.display='none';
   document.getElementById('login-panel').style.display='block';
+  renderTrialBanner();
+  // لو التريال منتهي، اخفي فورم اللوجين
+  const { expired } = getTrialInfo();
+  document.getElementById('login-panel').style.display = expired ? 'none' : 'block';
 }
 function _showSetup(){
   document.getElementById('setup-panel').style.display='block';
