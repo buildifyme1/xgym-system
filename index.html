@@ -953,6 +953,7 @@ body.role-receptionist .recep-hide{display:none!important}
       <div style="display:flex;gap:10px">
         <button class="btn btn-green btn-sm" onclick="openAddIncome()"><i class="fas fa-plus"></i>دخل جديد</button>
         <button class="btn btn-danger btn-sm" onclick="openAddExpense()"><i class="fas fa-minus"></i>مصروف جديد</button>
+        <button class="btn btn-sm" style="background:rgba(61,143,245,0.1);color:var(--blue);border:1px solid rgba(61,143,245,0.2)" onclick="cleanDuplicateTransactions()" title="إزالة المعاملات المكررة"><i class="fas fa-broom"></i>تنظيف التكرارات</button>
       </div>
     </div>
     <div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">
@@ -1839,8 +1840,9 @@ async function sbPushAttendance(){
 async function sbPushTransactions(){
   if(!_supabase)return;
   try{
-    // حذف الكل وإعادة الإدراج
-    await _supabase.from('xgym_transactions').delete().gte('id',0);
+    // حذف الكل وإعادة الإدراج — التأكد من نجاح الحذف قبل الإضافة
+    const {error:delErr}=await _supabase.from('xgym_transactions').delete().not('id','is',null);
+    if(delErr) throw delErr;
     const rows=[
       ...transactions.income.map(t=>({type:t.type||'income_other',amount:t.amount||0,date:t.date||'',note:t.note||'',category:'income'})),
       ...transactions.expense.map(t=>({type:t.type||'expense_other',amount:t.amount||0,date:t.date||'',note:t.note||'',category:'expense'}))
@@ -1945,10 +1947,18 @@ async function sbPullAll(){
     if(aRes.data&&aRes.data.length)
       attendance=aRes.data.map(r=>({id:r.member_id,name:r.member_name,type:r.type,time:r.time,ci:r.ci||0}));
 
-    // المعاملات المالية (الدخل والمصروف)
+    // المعاملات المالية (الدخل والمصروف) — مع إزالة التكرارات
     if(tRes.data&&tRes.data.length){
-      transactions.income=tRes.data.filter(r=>r.category==='income').map(({category,...r})=>r);
-      transactions.expense=tRes.data.filter(r=>r.category==='expense').map(({category,...r})=>r);
+      const dedup=(arr)=>{
+        const seen=new Set();
+        return arr.filter(t=>{
+          const key=`${t.type}|${t.amount}|${t.date}|${t.note||''}`;
+          if(seen.has(key))return false;
+          seen.add(key);return true;
+        });
+      };
+      transactions.income=dedup(tRes.data.filter(r=>r.category==='income').map(({category,...r})=>r));
+      transactions.expense=dedup(tRes.data.filter(r=>r.category==='expense').map(({category,...r})=>r));
     }
 
     // الأسعار + الأسماء + المدد
@@ -2060,7 +2070,7 @@ function resetAllData(){
     Promise.all([
       _supabase.from('xgym_members').delete().gte('id',''),
       _supabase.from('xgym_attendance').delete().gte('id',0),
-      _supabase.from('xgym_transactions').delete().gte('id',0),
+      _supabase.from('xgym_transactions').delete().not('id','is',null),
       _supabase.from('xgym_prices').delete().neq('key','__none__'),
       _supabase.from('xgym_coupons').delete().gte('id',0),
       _supabase.from('xgym_member_history').delete().gte('id',0),
@@ -2933,6 +2943,28 @@ function addTransaction(ttype){
   autoRefresh();
   renderFinance();
   showNotif('تمت إضافة '+(ttype==='income'?'الدخل':'المصروف'),'success');
+}
+
+function cleanDuplicateTransactions(){
+  const dedup=(arr)=>{
+    const seen=new Set();
+    return arr.filter(t=>{
+      const key=`${t.type}|${t.amount}|${t.date}|${t.note||''}`;
+      if(seen.has(key))return false;
+      seen.add(key);return true;
+    });
+  };
+  const beforeInc=transactions.income.length;
+  const beforeExp=transactions.expense.length;
+  transactions.income=dedup(transactions.income);
+  transactions.expense=dedup(transactions.expense);
+  const removed=(beforeInc+beforeExp)-(transactions.income.length+transactions.expense.length);
+  if(removed>0){
+    lsSave();renderFinance();autoRefresh();
+    showNotif(`✅ تم حذف ${removed} معاملة مكررة وإعادة الحفظ`,'success');
+  }else{
+    showNotif('لا توجد تكرارات — البيانات نظيفة','success');
+  }
 }
 
 function openRenewModal(id){
