@@ -2228,7 +2228,17 @@ function renderDashboard(){
   </div>`).join('');
 
   const liveEl=document.getElementById('live-attendance');
-  const recent=attendance.slice(0,7);
+  
+  // الحصول على آخر 7 أعضاء فريدين (بدل سجلات مكررة)
+  const uniqueMembers={};
+  for(let i=0;i<attendance.length;i++){
+    const a=attendance[i];
+    if(!uniqueMembers[a.id]){
+      uniqueMembers[a.id]={name:a.name,ci:a.ci,type:a.type,time:a.time,id:a.id};
+    }
+  }
+  const recent=Object.values(uniqueMembers).slice(0,7);
+  
   if(!recent.length){liveEl.innerHTML='<div style="text-align:center;padding:24px;color:var(--text3);font-size:12px"><i class="fas fa-clock" style="font-size:28px;display:block;margin-bottom:8px;opacity:.3"></i>لا يوجد حضور اليوم بعد</div>';}
   else{liveEl.innerHTML=recent.map(r=>`<div class="attendance-item">
     <div class="att-avatar" style="background:${AVATAR_COLORS[r.ci]};color:${AVATAR_TEXT[r.ci]}">${r.name.split(' ').map(w=>w[0]).join('')}</div>
@@ -2524,18 +2534,30 @@ function renderAttendance(){
 
 // ===== تحديث يومي شامل (عداد الحضور + أيام الاشتراك + التنبيهات) =====
 let _lastDay=new Date().toDateString();
+// ===== تحديث دوري للأرقام كل 5 ثوان =====
 setInterval(()=>{
   const nowDay=new Date().toDateString();
   // تحديث أيام الاشتراك كل دقيقة
   updateMemberDays();
+  
+  // تحديث الداشبورد كل 5 ثوان (أرقام الحضور والإيرادات)
+  if(document.getElementById('page-dashboard').classList.contains('active')){
+    renderDashboard();
+  }
+  
+  // تحديث صفحة الحضور تلقائياً كل 5 ثوان إذا كانت مفتوحة
+  if(document.getElementById("page-attendance").classList.contains("active")){
+    renderAttendance();
+  }
+  
+  // فحص تغيير اليوم
   if(nowDay!==_lastDay){
     _lastDay=nowDay;
     checkExpiryNotifications();
     renderDashboard();
-    if(document.getElementById("page-attendance").classList.contains("active"))renderAttendance();
     showNotif("يوم جديد — تم تحديث الاشتراكات","success");
   }
-},60000);
+},5000); // كل 5 ثوان
 
 // ===== أصوات =====
 const _ac=new (window.AudioContext||window.webkitAudioContext||function(){return null;})();
@@ -2595,20 +2617,19 @@ function renderAttendanceLog(){
     if(a.type==='out'&&!memberMap[a.id].out)memberMap[a.id].out=a.time;
   });
 
-  log.innerHTML=displayLogs.map((a,i)=>{
-    const isIn=a.type==='in';
-    const mData=memberMap[a.id]||{};
-    const completed=mData.in&&mData.out;
-    const timeStr=new Date(a.time).toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});
+  log.innerHTML=Object.values(memberMap).map((mData,i)=>{
+    const isIn=mData.in&&(!mData.out||(new Date(mData.in)>new Date(mData.out)));
+    const timeStr=isIn?new Date(mData.in).toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'}):new Date(mData.out).toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});
+    const statusLabel=mData.in&&mData.out?'دخول وخروج':isIn?'داخل الآن':'خارج';
     return`<div style="display:flex;align-items:center;gap:12px;padding:11px 16px;border-bottom:1px solid var(--border);transition:background .15s" onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background=''">
-      <div class="att-avatar" style="background:${AVATAR_COLORS[a.ci%5]};color:${AVATAR_TEXT[a.ci%5]};width:38px;height:38px;font-size:13px;flex-shrink:0">${a.name.split(' ').map(w=>w[0]).join('')}</div>
+      <div class="att-avatar" style="background:${AVATAR_COLORS[mData.ci%5]};color:${AVATAR_TEXT[mData.ci%5]};width:38px;height:38px;font-size:13px;flex-shrink:0">${mData.name.split(' ').map(w=>w[0]).join('')}</div>
       <div style="flex:1;min-width:0">
-        <div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.name}</div>
-        <div style="font-size:10px;color:var(--text3);margin-top:1px">${a.id}</div>
+        <div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${mData.name}</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:1px">${mData.id}</div>
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0">
         <span style="background:${isIn?'rgba(39,199,112,0.12)':'rgba(224,60,60,0.12)'};color:${isIn?'var(--green)':'var(--red)'};border-radius:20px;padding:2px 9px;font-size:10px;font-weight:800">
-          <i class="fas ${isIn?'fa-right-to-bracket':'fa-right-from-bracket'}" style="margin-left:3px"></i>${isIn?'دخول':'خروج'}
+          <i class="fas ${isIn?'fa-right-to-bracket':'fa-right-from-bracket'}" style="margin-left:3px"></i>${statusLabel}
         </span>
         <span style="font-size:10px;color:var(--text3)">${timeStr}</span>
       </div>
