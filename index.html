@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>X GYM — نظام إدارة الجيم v15</title>
+<title>X GYM — نظام إدارة الجيم v16</title>
 <meta name="description" content="نظام إدارة الجيم المتكامل — X GYM">
 <meta name="theme-color" content="#FF3131">
 <meta name="mobile-web-app-capable" content="yes">
@@ -1895,11 +1895,15 @@ async function sbConnect(){
 async function sbPushMembers(){
   if(!_supabase)return;
   try{
-    // حذف كل الأعضاء القديمة وإعادة الإدراج
-    await _supabase.from('xgym_members').delete().neq('id','__none__');
-    if(members.length){
-      const rows=members.map(m=>({id:m.id, data:m, updated_at:new Date().toISOString()}));
-      await _supabase.from('xgym_members').upsert(rows,{onConflict:'id'});
+    if(!members.length)return;
+    // upsert فقط بدون delete — آمن ضد فقد البيانات
+    const rows=members.map(m=>({id:m.id, data:m, updated_at:new Date().toISOString()}));
+    const {error}=await _supabase.from('xgym_members').upsert(rows,{onConflict:'id'});
+    if(error)throw error;
+    // حذف الأعضاء المؤرشفين/المحذوفين من Supabase (اللي مش موجودين في members[])
+    const liveIds=members.map(m=>m.id);
+    if(liveIds.length){
+      await _supabase.from('xgym_members').delete().not('id','in','('+liveIds.map(id=>`"${id}"`).join(',')+')');
     }
   }catch(e){console.warn('sbPushMembers error:',e);}
 }
@@ -2021,8 +2025,18 @@ async function sbPullAll(){
       _supabase.from('xgym_settings').select('*'),
     ]);
 
-    // الأعضاء
-    if(mRes.data&&mRes.data.length) members=mRes.data.map(r=>r.data);
+    // الأعضاء — حماية: لو Supabase فاضي ومحلي فيه بيانات، نحافظ على المحلي
+    if(mRes.data&&mRes.data.length){
+      members=mRes.data.map(r=>r.data);
+    } else if(!mRes.data||mRes.data.length===0){
+      // Supabase فاضي — نحمّل من localStorage كـ fallback
+      const localMembers=JSON.parse(localStorage.getItem(LS_KEYS.members)||'[]');
+      if(localMembers.length>0){
+        members=localMembers;
+        // ارفع البيانات المحلية لـ Supabase فوراً
+        setTimeout(()=>sbPushMembers(),1000);
+      }
+    }
 
     // الحضور
     if(aRes.data&&aRes.data.length)
@@ -2102,9 +2116,32 @@ async function sbPullAll(){
   }catch(e){console.warn('sbPullAll error:',e);return false;}
 }
 
-// حفظ محلي فقط بدون push لـ Supabase (لتجنب loop)
+// ===== LOCAL STORAGE - مفاتيح التخزين =====
+const LS_KEYS={
+  members:'xgym_members',
+  transactions:'xgym_transactions',
+  attendance:'xgym_attendance',
+  prices:'xgym_prices',
+  durations:'xgym_durations',
+  coupons:'xgym_coupons',
+  memberHistory:'xgym_member_history',
+  priceNames:'xgym_price_names'
+};
+
+// ✅ حفظ محلي آمن في localStorage (الأساس الموثوق)
 function lsSave_local(){
-  // كل البيانات بتتحفظ في Supabase فقط — localStorage معطل للبيانات
+  try {
+    localStorage.setItem(LS_KEYS.members, JSON.stringify(members));
+    localStorage.setItem(LS_KEYS.transactions, JSON.stringify(transactions));
+    localStorage.setItem(LS_KEYS.attendance, JSON.stringify(attendance));
+    localStorage.setItem(LS_KEYS.prices, JSON.stringify(prices));
+    localStorage.setItem(LS_KEYS.coupons, JSON.stringify(coupons));
+    localStorage.setItem(LS_KEYS.memberHistory, JSON.stringify(memberHistory));
+    localStorage.setItem(LS_KEYS.priceNames, JSON.stringify(priceNames));
+    localStorage.setItem(LS_KEYS.durations, JSON.stringify(DURATIONS));
+  } catch(e) {
+    console.warn('⚠️ خطأ في حفظ localStorage:', e);
+  }
 }
 
 // للتوافق مع الكود القديم
@@ -2119,19 +2156,51 @@ async function sbGet(key){
   }catch(e){return null;}
 }
 
-// ===== LOCAL STORAGE =====
-const LS_KEYS={members:'xgym_members',transactions:'xgym_transactions',attendance:'xgym_attendance',prices:'xgym_prices',durations:'xgym_durations',coupons:'xgym_coupons',memberHistory:'xgym_member_history'};
-
+// ✅ دالة الحفظ الرئيسية: محلي أولاً، Supabase ثانياً
 function lsSave(){
   const el=document.getElementById('save-indicator');
   if(el){el.textContent='✓ محفوظ';el.style.color='var(--green)';setTimeout(()=>{el.textContent='';},2000);}
-  // Supabase فقط — لا localStorage للبيانات
-  if(_supabase) sbPushAll().catch(()=>{});
+  
+  // ✓ حفظ محلي دائماً (الأساس الآمن)
+  lsSave_local();
+  
+  // إذا كان Supabase متصل، أرسل البيانات أيضاً مع retry
+  if(_supabase) {
+    sbPushAll().catch((err)=>{
+      console.warn('Supabase sync failed, retrying in 3s:', err);
+      setTimeout(()=>{
+        if(_supabase) sbPushAll().catch(e=>console.warn('Supabase retry failed:',e));
+      }, 3000);
+    });
+  }
 }
 
 function lsLoad(){
-  // البيانات من Supabase فقط — مش من localStorage
-  return {};
+  try {
+    // ✅ تحميل جميع البيانات من localStorage
+    return {
+      members: JSON.parse(localStorage.getItem(LS_KEYS.members)) || [],
+      transactions: JSON.parse(localStorage.getItem(LS_KEYS.transactions)) || {income:[], expense:[]},
+      attendance: JSON.parse(localStorage.getItem(LS_KEYS.attendance)) || [],
+      prices: JSON.parse(localStorage.getItem(LS_KEYS.prices)) || {},
+      coupons: JSON.parse(localStorage.getItem(LS_KEYS.coupons)) || [],
+      memberHistory: JSON.parse(localStorage.getItem(LS_KEYS.memberHistory)) || {},
+      priceNames: JSON.parse(localStorage.getItem(LS_KEYS.priceNames)) || {},
+      durations: JSON.parse(localStorage.getItem(LS_KEYS.durations)) || {}
+    };
+  } catch(e) {
+    console.warn('⚠️ خطأ في تحميل localStorage:', e);
+    return {
+      members:[],
+      transactions:{income:[],expense:[]},
+      attendance:[],
+      prices:{},
+      coupons:[],
+      memberHistory:{},
+      priceNames:{},
+      durations:{}
+    };
+  }
 }
 
 function resetAllData(){
