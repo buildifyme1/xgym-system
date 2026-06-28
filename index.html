@@ -957,7 +957,7 @@ body.role-receptionist .recep-hide{display:none!important}
               <input class="form-input" id="barcode-input"
                 placeholder="⚡ جاهز — اضغط trigger القارئ..."
                 style="text-align:center;font-family:monospace;font-size:16px;letter-spacing:3px;padding:14px;border-color:rgba(255,49,49,0.3);background:rgba(255,49,49,0.04);font-weight:700"
-                onkeydown="if(event.key==='Enter')scanMember()"
+                onkeydown="if(event.key==='Enter'){clearTimeout(window._bcAutoTimeout);scanMember();}"
                 oninput="onBarcodeInputChange(this.value)" autofocus />
               <div id="barcode-typing-indicator" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:10px;color:var(--gold);display:none"><i class="fas fa-keyboard"></i></div>
             </div>
@@ -1205,7 +1205,10 @@ body.role-receptionist .recep-hide{display:none!important}
     <div class="card" style="margin-bottom:16px">
       <div class="card-header">
         <div class="card-title"><i class="fas fa-trophy" style="color:var(--gold);margin-left:6px"></i>الأعضاء الأكثر حضوراً</div>
-        <span class="card-badge" id="top-period-label">هذا الشهر</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="card-badge" id="top-period-label">هذا الشهر</span>
+          <button class="btn btn-sm" style="background:rgba(224,60,60,0.08);color:var(--red);border:1px solid rgba(224,60,60,0.2);padding:4px 10px;font-size:10px" onclick="resetAttendanceLog()" title="مسح كل سجلات الحضور والبدء من جديد"><i class="fas fa-rotate-left"></i> إعادة تعيين</button>
+        </div>
       </div>
       <div id="top-members-list"></div>
     </div>
@@ -2854,8 +2857,12 @@ function renderReports(){
   // الأعضاء الأكثر حضوراً
   const memberVisits={};
   periodAtt.forEach(a=>{
-    if(!memberVisits[a.id])memberVisits[a.id]={count:0,name:a.name,ci:a.ci,id:a.id};
-    memberVisits[a.id].count++;
+    const dayKey=new Date(a.time).toDateString();
+    if(!memberVisits[a.id])memberVisits[a.id]={count:0,name:a.name,ci:a.ci,id:a.id,_days:new Set()};
+    if(!memberVisits[a.id]._days.has(dayKey)){
+      memberVisits[a.id]._days.add(dayKey);
+      memberVisits[a.id].count++;
+    }
   });
   const topList=Object.values(memberVisits).sort((a,b)=>b.count-a.count).slice(0,8);
   const maxV=topList.length?topList[0].count:1;
@@ -4029,37 +4036,55 @@ function selectManualMember(id){
 function scanManual(){
   const val=(document.getElementById('barcode-input-manual')?.value||'').trim();
   if(!val)return;
+  if(_isDuplicateScan('M:'+val))return;
   const m=members.find(x=>x.barcode===val||x.id===val||x.id.replace('XG-','')===val||x.name.includes(val));
   if(m){_recordAttendance(m);document.getElementById('barcode-input-manual').value='';}
   else showNotif('لم يُعثر على عضو: '+val,'warning');
+}
+
+// منع تسجيل نفس الكود مرتين في فترة قصيرة (يحمي من Enter + auto-timeout المزدوجين)
+let _lastScanCode='';let _lastScanTime=0;
+function _isDuplicateScan(code){
+  const now=Date.now();
+  if(code===_lastScanCode&&now-_lastScanTime<2000)return true;
+  _lastScanCode=code;_lastScanTime=now;
+  return false;
 }
 
 // موّحد مسح الباركود للقارئ الخارجي
 function scanMember(){
   const val=(document.getElementById('barcode-input')?.value||'').trim();
   if(!val)return;
+  document.getElementById('barcode-input').value='';
+  if(_isDuplicateScan(val))return;
   const m=members.find(x=>x.barcode===val||x.id===val||x.id.replace('XG-','')===val||x.name.includes(val));
-  if(m){playBeep('success');_recordAttendance(m);document.getElementById('barcode-input').value='';}
+  if(m){playBeep('success');_recordAttendance(m);}
   else{playBeep('error');showNotif('لم يُعثر على عضو: '+val,'warning');}
 }
 
 // ===== تسجيل الحضور المركزي =====
+function resetAttendanceLog(){
+  if(!confirm('هل تريد مسح كل سجلات الحضور والبدء من جديد؟ كل الأعضاء سيعودون لصفر زيارة. هذا الإجراء لا يمكن التراجع عنه.'))return;
+  attendance=[];
+  lsSave();
+  renderReports();
+  renderAttendance();
+  renderDashboard();
+  showNotif('تم مسح سجل الحضور بالكامل — البداية من صفر','success');
+}
+
 function _recordAttendance(m){
   const now=new Date();
   const todayStr=now.toDateString();
 
   // حساب سجلات العضو اليوم
   const todayRecords=attendance.filter(a=>a.id===m.id&&new Date(a.time).toDateString()===todayStr);
-  const todayIn=todayRecords.filter(a=>a.type==='in');
-  const todayOut=todayRecords.filter(a=>a.type==='out');
 
-  // ===== منطق مرة واحدة فاليوم =====
-  // إذا دخل وخرج بالفعل → تم تسجيله مرتين، لا يُسمح بتسجيل إضافي
-  if(todayIn.length>=1&&todayOut.length>=1){
+  // ===== منطق مرة واحدة فقط في اليوم =====
+  if(todayRecords.length>=1){
     playBeep('error');
     const resultEl=document.getElementById('scan-result');
-    const lastIn=new Date(todayIn[0].time).toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});
-    const lastOut=new Date(todayOut[0].time).toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});
+    const lastTime=new Date(todayRecords[0].time).toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});
     resultEl.innerHTML=`
       <div style="display:flex;align-items:center;gap:14px;animation:slideIn .3s ease">
         <div class="att-avatar" style="background:${AVATAR_COLORS[m.ci%5]};color:${AVATAR_TEXT[m.ci%5]};width:50px;height:50px;font-size:17px">${m.name.split(' ').map(w=>w[0]).join('')}</div>
@@ -4068,18 +4093,26 @@ function _recordAttendance(m){
           <div style="font-size:11px;color:var(--text3);margin-top:2px">${m.id} · ${priceNames[m.type]||m.type}</div>
           <div style="margin-top:8px;background:rgba(224,60,60,0.1);border:1px solid rgba(224,60,60,0.25);border-radius:8px;padding:8px 10px">
             <div style="font-size:12px;font-weight:700;color:var(--red)"><i class="fas fa-ban" style="margin-left:5px"></i>تم تسجيل الحضور اليوم مسبقاً</div>
-            <div style="font-size:11px;color:var(--text3);margin-top:4px">دخول: <b style="color:var(--text)">${lastIn}</b> &nbsp;|&nbsp; خروج: <b style="color:var(--text)">${lastOut}</b></div>
+            <div style="font-size:11px;color:var(--text3);margin-top:4px">وقت التسجيل: <b style="color:var(--text)">${lastTime}</b></div>
           </div>
         </div>
       </div>`;
     resultEl.style.display='block';
     resultEl.className='scan-result warning';
-    showNotif(m.name+' — تم تسجيل دخوله وخروجه اليوم','warning');
+    showNotif(m.name+' — تم تسجيل حضوره اليوم مسبقاً','warning');
+
+    const flashName=document.getElementById('cam-flash-name');
+    const flashInfo=document.getElementById('cam-flash-info');
+    const flashResult=document.getElementById('cam-flash-result');
+    if(flashResult&&_attMode==='camera'){
+      if(flashName)flashName.textContent='⚠️ '+m.name+' — مسجّل بالفعل';
+      if(flashInfo)flashInfo.textContent='تم تسجيل حضوره اليوم الساعة '+lastTime;
+      flashResult.style.background='linear-gradient(0deg,rgba(224,60,60,0.9),transparent)';
+      flashResult.style.display='block';
+      setTimeout(()=>{if(flashResult)flashResult.style.display='none';},3500);
+    }
     return;
   }
-
-  // تحديد نوع التسجيل التالي
-  const type=(todayIn.length>todayOut.length)?'out':'in';
 
   // تحقق من الاشتراك — منع دخول المنتهي اشتراكه نهائياً
   if(m.status==='expired'){
@@ -4118,6 +4151,7 @@ function _recordAttendance(m){
     return;
   }
 
+  const type='in';
   const record={id:m.id,name:m.name,ci:m.ci,type,time:now.toISOString()};
   attendance.unshift(record);
   lsSave();
@@ -4127,9 +4161,9 @@ function _recordAttendance(m){
   const flashInfo=document.getElementById('cam-flash-info');
   const flashResult=document.getElementById('cam-flash-result');
   if(flashResult&&_attMode==='camera'){
-    if(flashName)flashName.textContent=(type==='in'?'✅ ':'🔴 ')+m.name;
-    if(flashInfo)flashInfo.textContent=m.id+' · '+(priceNames[m.type]||m.type)+' · '+(type==='in'?'دخول':'خروج')+' '+now.toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});
-    flashResult.style.background=type==='in'?'linear-gradient(0deg,rgba(39,199,112,0.9),transparent)':'linear-gradient(0deg,rgba(224,60,60,0.9),transparent)';
+    if(flashName)flashName.textContent='✅ '+m.name;
+    if(flashInfo)flashInfo.textContent=m.id+' · '+(priceNames[m.type]||m.type)+' · تسجيل حضور '+now.toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});
+    flashResult.style.background='linear-gradient(0deg,rgba(39,199,112,0.9),transparent)';
     flashResult.style.display='block';
     setTimeout(()=>{if(flashResult)flashResult.style.display='none';},3500);
   }
@@ -4137,19 +4171,11 @@ function _recordAttendance(m){
   // بطاقة نتيجة المسح المحسّنة
   const resultEl=document.getElementById('scan-result');
   const statusColor=m.status==='active'?'var(--green)':m.status==='expired'?'var(--red)':'var(--gold)';
-  const isIn=type==='in';
-  const bgColor=isIn?'rgba(39,199,112,0.08)':'rgba(224,60,60,0.08)';
-  const borderColor=isIn?'rgba(39,199,112,0.25)':'rgba(224,60,60,0.25)';
-  const typeColor=isIn?'var(--green)':'var(--red)';
-  const typeIcon=isIn?'fa-right-to-bracket':'fa-right-from-bracket';
-  const typeLabel=isIn?'دخول':'خروج';
-
-  // معلومات اشتراك العضو اليوم
-  const newTodayIn=attendance.filter(a=>a.id===m.id&&a.type==='in'&&new Date(a.time).toDateString()===todayStr);
-  const newTodayOut=attendance.filter(a=>a.id===m.id&&a.type==='out'&&new Date(a.time).toDateString()===todayStr);
-  const visitStatus=isIn
-    ? '<span style="color:var(--text3);font-size:11px">في انتظار تسجيل الخروج</span>'
-    : '<span style="color:var(--green);font-size:11px">✅ اكتملت الزيارة اليوم</span>';
+  const bgColor='rgba(39,199,112,0.08)';
+  const borderColor='rgba(39,199,112,0.25)';
+  const typeColor='var(--green)';
+  const typeIcon='fa-right-to-bracket';
+  const typeLabel='حضور';
 
   resultEl.innerHTML=`
     <div style="background:${bgColor};border:1.5px solid ${borderColor};border-radius:14px;padding:14px 16px;animation:slideIn .3s ease">
@@ -4165,8 +4191,6 @@ function _recordAttendance(m){
             <span style="color:${statusColor};font-size:11px;font-weight:700">${m.status==='active'?'✅ نشط':m.status==='expired'?'❌ منتهي':'🔒 مجمد'}</span>
             <span style="color:var(--text3);font-size:11px">|</span>
             <span style="color:var(--text2);font-size:11px"><i class="fas fa-clock" style="margin-left:3px"></i>${now.toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'})}</span>
-            <span style="color:var(--text3);font-size:11px">|</span>
-            ${visitStatus}
           </div>
           ${m.days<=3&&m.status==='active'?`<div style="font-size:11px;color:var(--red);margin-top:6px;display:flex;align-items:center;gap:8px"><i class="fas fa-triangle-exclamation"></i> ينتهي خلال ${m.days} يوم! <button class="btn btn-sm" style="background:rgba(37,211,102,0.1);color:#25d366;border:1px solid rgba(37,211,102,0.2);padding:2px 8px;font-size:10px" onclick="sendWA('${m.phone}','${m.name}')"><i class="fab fa-whatsapp"></i>تذكير</button></div>`:''}
         </div>
@@ -4183,12 +4207,11 @@ function _recordAttendance(m){
 
   // تحديث العدادات
   const todayRecs=attendance.filter(a=>new Date(a.time).toDateString()===todayStr);
-  const inCount=todayRecs.filter(a=>a.type==='in').length;
-  const outCount=todayRecs.filter(a=>a.type==='out').length;
-  const uniqueCount=new Set(todayRecs.filter(a=>a.type==='in').map(a=>a.id)).size;
+  const inCount=todayRecs.length;
+  const uniqueCount=new Set(todayRecs.map(a=>a.id)).size;
   document.getElementById('att-today-in').textContent=inCount;
-  document.getElementById('att-today-out').textContent=outCount;
-  document.getElementById('att-today-now').textContent=Math.max(0,inCount-outCount);
+  const outEl=document.getElementById('att-today-out');if(outEl)outEl.textContent=0;
+  document.getElementById('att-today-now').textContent=inCount;
   const uniqEl=document.getElementById('att-unique-today');
   if(uniqEl)uniqEl.textContent=uniqueCount;
   document.getElementById('today-count').textContent=inCount;
