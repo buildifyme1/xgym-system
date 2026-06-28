@@ -1810,6 +1810,26 @@ function changePassword(target){
 const SB_URL_KEY='xgym_sb_url';
 const SB_KEY_KEY='xgym_sb_key';
 let _supabase=null;
+let _pricesChannel=null;
+
+// ✅ Realtime listener على xgym_prices
+function sbSubscribePrices(client){
+  if(_pricesChannel){try{_pricesChannel.unsubscribe();}catch(e){}}
+  _pricesChannel=client.channel('xgym_prices_rt')
+    .on('postgres_changes',{event:'*',schema:'public',table:'xgym_prices'},payload=>{
+      const {eventType,new:n,old:o}=payload;
+      if(eventType==='INSERT'||eventType==='UPDATE'){
+        if(n&&n.key){prices[n.key]=n.price;if(n.name)priceNames[n.key]=n.name;if(n.duration)DURATIONS[n.key]=n.duration;}
+      } else if(eventType==='DELETE'){
+        if(o&&o.key){delete prices[o.key];delete priceNames[o.key];delete DURATIONS[o.key];}
+      }
+      lsSave_local();
+      renderPriceSettings&&renderPriceSettings();
+      renderSubscriptions&&renderSubscriptions();
+      rebuildSubTypeSelect&&rebuildSubTypeSelect();
+    })
+    .subscribe();
+}
 
 const SB_SQL=`-- Run this once in Supabase SQL Editor
 -- جداول النظام
@@ -1883,6 +1903,8 @@ async function sbConnect(){
     updateSbNavBtn(true);
     await sbPushAll();
     box.innerHTML='<i class="fas fa-check-circle" style="margin-left:6px"></i>✅ متصل ومزامن! كل التغييرات ستُحفظ تلقائياً على Supabase.';
+    // ✅ Realtime: أي تغيير على xgym_prices يتزامن فوراً
+    sbSubscribePrices(_supabase);
     setTimeout(()=>closeModal('supabase-config-modal'),1800);
     showNotif('تم ربط Supabase بنجاح','success');
   }catch(e){
@@ -2066,8 +2088,12 @@ async function sbPullAll(force=false){
       transactions.expense=dedup(tRes.data.filter(r=>r.category==='expense').map(({category,...r})=>r));
     }
 
-    // الأسعار + الأسماء + المدد
+    // الأسعار + الأسماء + المدد — استبدال كامل (علشان الحذف يتطبق)
     if(pRes.data&&pRes.data.length){
+      // مسح المحلي أولاً ثم تحميل Supabase كاملاً
+      Object.keys(prices).forEach(k=>delete prices[k]);
+      Object.keys(priceNames).forEach(k=>delete priceNames[k]);
+      Object.keys(DURATIONS).forEach(k=>delete DURATIONS[k]);
       pRes.data.forEach(r=>{
         prices[r.key]=r.price;
         if(r.name) priceNames[r.key]=r.name;
@@ -5020,7 +5046,7 @@ updateTime();setInterval(updateTime,1000);
   // 3. Init Supabase client (sync, just creates client)
   const sbUrl=localStorage.getItem(SB_URL_KEY)||'https://hotheuohwywchcrydvxl.supabase.co';
   const sbKey=localStorage.getItem(SB_KEY_KEY)||'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhvdGhldW9od3l3Y2hjcnlkdnhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNTA0OTAsImV4cCI6MjA5NTYyNjQ5MH0.plhZ_0ihIw1T7w0gKrvyxAGkU6iyvFd0k6PsuPk7ovY';
-  try{ _supabase=supabase.createClient(sbUrl,sbKey); updateSbNavBtn(true); }catch(e){ _supabase=null; }
+  try{ _supabase=supabase.createClient(sbUrl,sbKey); updateSbNavBtn(true); sbSubscribePrices(_supabase); }catch(e){ _supabase=null; }
 
   // 4. Pull ALL data from Supabase FIRST (await properly)
   if(_supabase){
