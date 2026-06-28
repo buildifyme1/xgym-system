@@ -1698,7 +1698,7 @@ function doLogin(){
   sessionStorage.setItem(AUTH_KEY, JSON.stringify(currentUser));
   // Pull latest data from Supabase before showing the app
   if(_supabase){
-    sbPullAll().then(()=>{applyRole(currentUser);}).catch(()=>{applyRole(currentUser);});
+    sbPullAll(true).then(()=>{applyRole(currentUser);}).catch(()=>{applyRole(currentUser);});
   } else {
     applyRole(currentUser);
   }
@@ -1939,13 +1939,15 @@ async function sbPushTransactions(){
 async function sbPushPrices(){
   if(!_supabase)return;
   try{
+    // حذف كل الباقات القديمة أولاً ثم رفع الحالية (علشان الحذف يتطبق على Supabase)
+    await _supabase.from('xgym_prices').delete().neq('key','__none__');
     const rows=Object.keys(prices).map(k=>({
       key:k, price:prices[k],
       name:priceNames[k]||k,
       duration:DURATIONS[k]||30,
       updated_at:new Date().toISOString()
     }));
-    if(rows.length) await _supabase.from('xgym_prices').upsert(rows,{onConflict:'key'});
+    if(rows.length) await _supabase.from('xgym_prices').insert(rows);
   }catch(e){console.warn('sbPushPrices error:',e);}
 }
 
@@ -2011,8 +2013,13 @@ async function sbPushAll(){
   ]);
 }
 
-async function sbPullAll(){
+async function sbPullAll(force=false){
   if(!_supabase)return false;
+  // حماية: لو في تغيير محلي حصل من أقل من 10 ثواني، لا تعمل pull (علشان الـ push ما يتغلبش)
+  if(!force && Date.now() - _lastLocalSaveTime < 10000){
+    console.log('sbPullAll skipped — recent local save detected');
+    return false;
+  }
   try{
     // جلب كل الجداول بالتوازي
     const [mRes,aRes,tRes,pRes,cRes,hRes,sRes]=await Promise.all([
@@ -2157,11 +2164,13 @@ async function sbGet(key){
 }
 
 // ✅ دالة الحفظ الرئيسية: محلي أولاً، Supabase ثانياً
+let _lastLocalSaveTime = 0;
 function lsSave(){
   const el=document.getElementById('save-indicator');
   if(el){el.textContent='✓ محفوظ';el.style.color='var(--green)';setTimeout(()=>{el.textContent='';},2000);}
   
   // ✓ حفظ محلي دائماً (الأساس الآمن)
+  _lastLocalSaveTime = Date.now();
   lsSave_local();
   
   // إذا كان Supabase متصل، أرسل البيانات أيضاً مع retry
@@ -3291,7 +3300,8 @@ function openEditMember(id){
   document.getElementById('edit-end-date').value=m.end||'';
   // Build sub type select
   const sel=document.getElementById('edit-sub-type');
-  sel.innerHTML=Object.entries(priceNames).map(([k,v])=>`<option value="${k}" ${k===m.type?'selected':''}>${v} — ${(prices[k]||0).toLocaleString()} جنيه</option>`).join('');
+  sel.innerHTML=`<option value="">— بدون اشتراك —</option>`+Object.entries(priceNames).map(([k,v])=>`<option value="${k}" ${k===m.type?'selected':''}>${v} — ${(prices[k]||0).toLocaleString()} جنيه</option>`).join('');
+  if(!m.type||!priceNames[m.type]) sel.value='';
   openModal('edit-member-modal');
 }
 
@@ -4995,7 +5005,7 @@ updateTime();setInterval(updateTime,1000);
     try{
       await loadPasswords();
       await loadTrialFromSupabase();
-      const pulled = await sbPullAll();
+      const pulled = await sbPullAll(true);
       if(pulled){
         // إذا في بيانات في Supabase، السيستم اتعمل قبل كده
         localStorage.setItem(SETUP_KEY,'1');
