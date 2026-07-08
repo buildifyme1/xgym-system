@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>X GYM — نظام إدارة الجيم v16</title>
 <meta name="description" content="نظام إدارة الجيم المتكامل — X GYM">
-<meta name="theme-color" content="#FF3131">
+<meta name="theme-color" content="#D6474C">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -20,14 +20,15 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
-  --bg:#06080f;--bg2:#0b0f1a;--bg3:#101525;--bg4:#161d2d;
-  --bg5:#1c2438;
-  --gold:#FF3131;--gold2:#cc2525;--gold3:#ff4d4d;--gold-light:rgba(255,49,49,0.08);
-  --red:#FF3131;--green:#22c96a;--blue:#3d8ff5;--purple:#8b54d4;--cyan:#1fc8d0;
-  --text:#dde2f0;--text2:#7a88a6;--text3:#3f4f6e;
-  --border:#1a2236;--border2:#243050;--border3:#2e3d5c;
-  --card-shadow:0 12px 40px rgba(0,0,0,0.6),0 2px 8px rgba(0,0,0,0.4);
-  --gold-glow:0 0 40px rgba(255,49,49,0.15);
+  --bg:#08090e;--bg2:#0d101a;--bg3:#131828;--bg4:#181f31;
+  --bg5:#1e2637;
+  --gold:#D6474C;--gold2:#9E3538;--gold3:#E27A7D;--gold-light:rgba(214,71,76,0.07);
+  --gold-soft:rgba(214,71,76,0.25);
+  --red:#D6474C;--green:#26b877;--blue:#4a90e8;--purple:#8b6bc4;--cyan:#2bb8bf;
+  --text:#e2e5f0;--text2:#828fab;--text3:#485874;
+  --border:#1a2032;--border2:#232c44;--border3:#2c3652;
+  --card-shadow:0 10px 32px rgba(0,0,0,0.45),0 2px 6px rgba(0,0,0,0.3);
+  --gold-glow:0 0 32px rgba(214,71,76,0.12);
   --sidebar-w:256px;
   --radius:18px;--radius-sm:12px;--radius-xs:8px;
   --transition:all 0.2s cubic-bezier(0.4,0,0.2,1);
@@ -57,7 +58,7 @@ body.light-mode .modal-overlay{
   background:rgba(0,0,0,0.3);
 }
 body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;font-size:14px;line-height:1.5}
-body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 70% 0%,rgba(255,49,49,0.03) 0%,transparent 50%),radial-gradient(ellipse at 30% 100%,rgba(61,143,245,0.02) 0%,transparent 40%);pointer-events:none;z-index:0}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 70% 0%,rgba(214,71,76,0.03) 0%,transparent 50%),radial-gradient(ellipse at 30% 100%,rgba(61,143,245,0.02) 0%,transparent 40%);pointer-events:none;z-index:0}
 
 /* ═══ SIDEBAR ═══ */
 .sidebar{
@@ -69,28 +70,28 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 }
 .sidebar::before{
   content:'';position:absolute;inset:0;
-  background:radial-gradient(ellipse at 20% 15%,rgba(255,49,49,0.04) 0%,transparent 60%);
+  background:radial-gradient(ellipse at 20% 15%,rgba(214,71,76,0.04) 0%,transparent 60%);
   pointer-events:none;
 }
 .sidebar::after{
   content:'';position:absolute;top:0;right:0;width:1px;height:100%;
-  background:linear-gradient(180deg,transparent 5%,rgba(255,49,49,0.2) 35%,rgba(255,49,49,0.08) 70%,transparent 95%);
+  background:linear-gradient(180deg,transparent 5%,rgba(214,71,76,0.2) 35%,rgba(214,71,76,0.08) 70%,transparent 95%);
 }
 .logo{
   padding:22px 18px 20px;
   border-bottom:1px solid rgba(26,34,54,0.8);
   display:flex;align-items:center;gap:13px;
-  background:linear-gradient(135deg,rgba(255,49,49,0.06),transparent 70%);
+  background:linear-gradient(135deg,rgba(214,71,76,0.06),transparent 70%);
   position:relative;
 }
-.logo::after{content:'';position:absolute;bottom:0;left:18px;right:18px;height:1px;background:linear-gradient(90deg,transparent,rgba(255,49,49,0.12),transparent)}
+.logo::after{content:'';position:absolute;bottom:0;left:18px;right:18px;height:1px;background:linear-gradient(90deg,transparent,rgba(214,71,76,0.12),transparent)}
 .logo-icon{
   width:44px;height:44px;
   background:linear-gradient(135deg,var(--gold3),var(--gold),var(--gold2));
   border-radius:13px;display:flex;align-items:center;justify-content:center;
-  font-family:'Orbitron',monospace;font-weight:900;font-size:17px;color:#000;
+  font-family:'Orbitron',monospace;font-weight:900;font-size:17px;color:#fff;
   letter-spacing:-1px;flex-shrink:0;
-  box-shadow:0 4px 20px rgba(255,49,49,0.4),0 0 0 1px rgba(255,49,49,0.15);
+  box-shadow:0 4px 20px rgba(214,71,76,0.28),0 0 0 1px rgba(214,71,76,0.15);
 }
 .logo-text{font-family:'Orbitron',monospace;font-weight:700;font-size:14px;color:var(--gold);letter-spacing:2px;line-height:1.2}
 .logo-sub{font-size:9px;color:var(--text3);font-family:'Cairo',sans-serif;font-weight:400;margin-top:2px;letter-spacing:.5px}
@@ -108,29 +109,29 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 }
 .nav-item:hover{background:rgba(255,255,255,0.05);color:var(--text2);transform:translateX(-2px)}
 .nav-item.active{
-  background:linear-gradient(135deg,rgba(255,49,49,0.14),rgba(255,49,49,0.06));
+  background:linear-gradient(135deg,rgba(214,71,76,0.14),rgba(214,71,76,0.06));
   color:var(--gold);
-  box-shadow:inset 0 0 0 1px rgba(255,49,49,0.2),0 4px 16px rgba(255,49,49,0.08);
+  box-shadow:inset 0 0 0 1px rgba(214,71,76,0.2),0 4px 16px rgba(214,71,76,0.08);
 }
 .nav-item.active::before{
   content:'';position:absolute;right:-10px;top:50%;transform:translateY(-50%);
   width:3px;height:55%;background:linear-gradient(180deg,var(--gold3),var(--gold));border-radius:2px;
-  box-shadow:0 0 12px rgba(255,49,49,0.8);
+  box-shadow:0 0 12px rgba(214,71,76,0.5);
 }
 .nav-item i{width:20px;text-align:center;font-size:14px;opacity:.85}
 .nav-item.active i{opacity:1}
 .nav-badge{
   margin-right:auto;background:var(--red);color:#fff;
   border-radius:20px;padding:2px 8px;font-size:9px;font-weight:800;
-  box-shadow:0 2px 10px rgba(232,66,62,0.45);
+  box-shadow:0 2px 10px rgba(214,71,76,0.32);
 }
 .sidebar-footer{
   padding:16px 18px;
   border-top:1px solid rgba(26,34,54,0.8);
-  background:linear-gradient(0deg,rgba(255,49,49,0.04),transparent 80%);
+  background:linear-gradient(0deg,rgba(214,71,76,0.04),transparent 80%);
   position:relative;
 }
-.sidebar-footer::before{content:'';position:absolute;top:0;left:18px;right:18px;height:1px;background:linear-gradient(90deg,transparent,rgba(255,49,49,0.1),transparent)}
+.sidebar-footer::before{content:'';position:absolute;top:0;left:18px;right:18px;height:1px;background:linear-gradient(90deg,transparent,rgba(214,71,76,0.1),transparent)}
 .gym-status{display:flex;align-items:center;gap:8px;font-size:12px}
 .status-dot{
   width:7px;height:7px;border-radius:50%;
@@ -165,11 +166,11 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   width:37px;height:37px;border-radius:10px;
   background:linear-gradient(135deg,var(--gold3),var(--gold),var(--gold2));
   display:flex;align-items:center;justify-content:center;
-  font-weight:900;font-size:13px;color:#000;cursor:pointer;
-  box-shadow:0 2px 14px rgba(255,49,49,0.3),0 0 0 1px rgba(255,49,49,0.15);
+  font-weight:900;font-size:13px;color:#fff;cursor:pointer;
+  box-shadow:0 2px 14px rgba(214,71,76,0.3),0 0 0 1px rgba(214,71,76,0.15);
   transition:var(--transition);
 }
-.avatar:hover{transform:scale(1.05);box-shadow:0 4px 18px rgba(255,49,49,0.4);}
+.avatar:hover{transform:scale(1.05);box-shadow:0 4px 18px rgba(214,71,76,0.28);}
 
 .content{padding:26px 30px;display:none;position:relative;z-index:1}
 .content.active{display:block}
@@ -191,17 +192,17 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 }
 .stat-card::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:16px 16px 0 0}
 .stat-card.gold::after{background:linear-gradient(90deg,var(--gold),var(--gold2))}
-.stat-card.gold{box-shadow:inset 0 0 40px rgba(255,49,49,0.03)}
+.stat-card.gold{box-shadow:inset 0 0 40px rgba(214,71,76,0.03)}
 .stat-card.green::after{background:linear-gradient(90deg,#27c770,#1fa856)}
 .stat-card.green{box-shadow:inset 0 0 40px rgba(39,199,112,0.03)}
 .stat-card.red::after{background:linear-gradient(90deg,#e03c3c,#b52c2c)}
-.stat-card.red{box-shadow:inset 0 0 40px rgba(224,60,60,0.03)}
+.stat-card.red{box-shadow:inset 0 0 40px rgba(158,53,56,0.03)}
 .stat-card.blue::after{background:linear-gradient(90deg,#4a9eff,#1a7acc)}
 .stat-card.blue{box-shadow:inset 0 0 40px rgba(74,158,255,0.03)}
 .stat-icon{width:42px;height:42px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:17px;margin-bottom:12px}
-.stat-card.gold .stat-icon{background:rgba(255,49,49,0.1);color:var(--gold)}
+.stat-card.gold .stat-icon{background:rgba(214,71,76,0.1);color:var(--gold)}
 .stat-card.green .stat-icon{background:rgba(39,199,112,0.1);color:var(--green)}
-.stat-card.red .stat-icon{background:rgba(224,60,60,0.1);color:var(--red)}
+.stat-card.red .stat-icon{background:rgba(158,53,56,0.1);color:var(--red)}
 .stat-card.blue .stat-icon{background:rgba(74,158,255,0.1);color:var(--blue)}
 .stat-val{font-size:30px;font-weight:900;color:var(--text);font-family:'Orbitron',monospace;letter-spacing:-1.5px}
 .stat-label{font-size:11.5px;color:var(--text2);margin-top:6px;font-weight:600;letter-spacing:.2px}
@@ -215,8 +216,8 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
 .card-title{font-size:13.5px;font-weight:700;color:var(--text)}
 .card-badge{
-  background:rgba(255,49,49,0.1);color:var(--gold);
-  border:1px solid rgba(255,49,49,0.2);
+  background:rgba(214,71,76,0.1);color:var(--gold);
+  border:1px solid rgba(214,71,76,0.2);
   border-radius:20px;padding:3px 11px;font-size:10px;font-weight:700;letter-spacing:.3px;
 }
 
@@ -228,7 +229,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   transition:all .4s cubic-bezier(.4,0,.2,1);
   cursor:pointer;position:relative;min-height:4px;
 }
-.bar:hover{filter:brightness(1.3);transform:scaleY(1.03) translateY(-2px);transform-origin:bottom;box-shadow:0 -4px 12px rgba(255,49,49,0.3)}
+.bar:hover{filter:brightness(1.3);transform:scaleY(1.03) translateY(-2px);transform-origin:bottom;box-shadow:0 -4px 12px rgba(214,71,76,0.3)}
 .bar-label{font-size:9.5px;color:var(--text3);font-weight:600}
 .bar-val{font-size:9px;color:var(--text2);font-weight:700}
 
@@ -241,19 +242,19 @@ tr:last-child td{border:none}
 tr:hover td{background:rgba(255,255,255,0.025)}
 .tag{display:inline-flex;align-items:center;gap:4px;border-radius:20px;padding:3px 10px;font-size:10.5px;font-weight:700;letter-spacing:.3px}
 .tag.active{background:rgba(34,201,106,0.12);color:var(--green);border:1px solid rgba(34,201,106,0.2)}
-.tag.expired{background:rgba(232,66,62,0.12);color:var(--red);border:1px solid rgba(232,66,62,0.2)}
-.tag.pending{background:rgba(255,49,49,0.12);color:var(--gold);border:1px solid rgba(255,49,49,0.2)}
+.tag.expired{background:rgba(214,71,76,0.12);color:var(--red);border:1px solid rgba(214,71,76,0.2)}
+.tag.pending{background:rgba(214,71,76,0.12);color:var(--gold);border:1px solid rgba(214,71,76,0.2)}
 .tag.frozen{background:rgba(61,143,245,0.12);color:var(--blue);border:1px solid rgba(61,143,245,0.2)}
 .member-avatar{width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px}
 
 /* ACTIONS */
 .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;border:none;transition:.2s;font-family:'Cairo',sans-serif}
-.btn-gold{background:linear-gradient(135deg,var(--gold3),var(--gold),var(--gold2));color:#000;box-shadow:0 4px 16px rgba(255,49,49,0.25)}
-.btn-gold:hover{opacity:.92;transform:translateY(-2px);box-shadow:0 6px 22px rgba(255,49,49,0.35)}
+.btn-gold{background:linear-gradient(135deg,var(--gold3),var(--gold),var(--gold2));color:#fff;text-shadow:0 1px 2px rgba(0,0,0,0.25);box-shadow:0 4px 16px rgba(214,71,76,0.25)}
+.btn-gold:hover{opacity:.92;transform:translateY(-2px);box-shadow:0 6px 22px rgba(214,71,76,0.25)}
 .btn-outline{background:transparent;border:1px solid var(--border2);color:var(--text2)}
 .btn-outline:hover{background:var(--bg4);color:var(--text)}
-.btn-danger{background:rgba(224,60,60,0.12);color:var(--red);border:1px solid rgba(224,60,60,0.2)}
-.btn-danger:hover{background:rgba(224,60,60,0.2)}
+.btn-danger{background:rgba(158,53,56,0.12);color:var(--red);border:1px solid rgba(158,53,56,0.2)}
+.btn-danger:hover{background:rgba(158,53,56,0.2)}
 .btn-green{background:rgba(46,204,113,0.12);color:var(--green);border:1px solid rgba(46,204,113,0.2)}
 .btn-green:hover{background:rgba(46,204,113,0.2)}
 .btn-sm{padding:6px 12px;font-size:12px}
@@ -279,7 +280,7 @@ tr:hover td{background:rgba(255,255,255,0.025)}
 .sc-br{bottom:0;left:0;border-width:0 3px 3px 0;border-radius:0 8px 0 0}
 .scanner-line{position:absolute;width:calc(100% - 12px);height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent);right:6px;animation:scan 2s linear infinite}
 @keyframes scan{0%{top:10%}100%{top:90%}}
-.scanner-inner{width:100%;height:100%;border:1px solid rgba(255,49,49,0.1);border-radius:8px;background:rgba(255,49,49,0.02);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px}
+.scanner-inner{width:100%;height:100%;border:1px solid rgba(214,71,76,0.1);border-radius:8px;background:rgba(214,71,76,0.02);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px}
 
 /* ATTENDANCE LOG */
 .attendance-item{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid rgba(26,34,54,0.6)}
@@ -288,12 +289,30 @@ tr:hover td{background:rgba(255,255,255,0.025)}
 .att-time{font-size:11px;color:var(--text3);display:flex;align-items:center;gap:4px}
 .att-type{font-size:10px;padding:2px 7px;border-radius:6px;font-weight:700}
 .att-in{background:rgba(46,204,113,0.12);color:var(--green)}
-.att-out{background:rgba(224,60,60,0.12);color:var(--red)}
+.att-out{background:rgba(158,53,56,0.12);color:var(--red)}
 
 /* FINANCE */
 .finance-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
-.trans-item{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border)}
+.trans-item{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border);animation:transIn .35s ease both}
 .trans-item:last-child{border:none}
+@keyframes transIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.finance-filter-bar{background:linear-gradient(145deg,var(--bg3),var(--bg2));border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px;display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:12px;position:relative;overflow:hidden}
+.finance-filter-bar::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--gold2),transparent)}
+.week-nav{display:flex;align-items:center;gap:8px}
+.week-nav-btn{width:34px;height:34px;flex:none;border-radius:10px;background:var(--bg4);border:1px solid var(--border2);color:var(--text2);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:var(--transition);font-size:13px}
+.week-nav-btn:hover:not(:disabled){border-color:var(--gold2);color:var(--gold);transform:translateY(-1px)}
+.week-nav-btn:disabled{opacity:.3;cursor:not-allowed}
+.week-label-wrap{display:flex;flex-direction:column;align-items:center;min-width:150px}
+.week-label{font-size:13.5px;font-weight:800;color:var(--text)}
+.week-sub{font-size:10.5px;color:var(--text3);font-weight:600;margin-top:2px;display:flex;align-items:center;gap:5px}
+.week-sub .dot{width:5px;height:5px;border-radius:50%;background:var(--gold)}
+.week-today-btn{background:rgba(214,71,76,0.1);color:var(--gold);border:1px solid rgba(214,71,76,0.2);border-radius:8px;padding:7px 14px;font-size:11.5px;font-weight:700;cursor:pointer;transition:var(--transition);font-family:'Cairo',sans-serif;white-space:nowrap}
+.week-today-btn:hover{background:rgba(214,71,76,0.18)}
+.week-today-btn:disabled{opacity:.35;cursor:not-allowed;background:var(--bg4);color:var(--text3);border-color:var(--border2)}
+.trans-list-count{font-size:11px;color:var(--text3);font-weight:700;background:var(--bg4);border-radius:8px;padding:3px 10px}
+.trans-empty{padding:36px 10px;text-align:center;color:var(--text3);font-size:12.5px;display:flex;flex-direction:column;align-items:center;gap:8px}
+.trans-empty i{font-size:26px;color:var(--border2)}
+@media(max-width:600px){.finance-filter-bar{justify-content:center}.week-nav{order:2;width:100%;justify-content:center}.week-label-wrap{order:1}.week-today-btn{order:3;margin:0 auto}}
 .trans-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
 .trans-amount.income{color:var(--green);font-weight:700}
 .trans-amount.expense{color:var(--red);font-weight:700}
@@ -307,12 +326,12 @@ tr:hover td{background:rgba(255,255,255,0.025)}
 .form-group{margin-bottom:16px}
 .form-label{font-size:12px;color:var(--text2);font-weight:700;margin-bottom:6px;display:block;letter-spacing:.5px}
 .form-input{width:100%;background:var(--bg4);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:11px 15px;color:var(--text);font-family:'Cairo',sans-serif;font-size:13px;outline:none;transition:var(--transition)}
-.form-input:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(255,49,49,0.12);background:var(--bg5)}
+.form-input:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(214,71,76,0.12);background:var(--bg5)}
 .form-select{width:100%;background:var(--bg4);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:11px 15px;color:var(--text);font-family:'Cairo',sans-serif;font-size:13px;outline:none;appearance:none;transition:var(--transition)}
-.form-select:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(255,49,49,0.12)}
+.form-select:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(214,71,76,0.12)}
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .close-btn{position:absolute;top:20px;left:20px;width:34px;height:34px;border-radius:9px;background:var(--bg4);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);font-size:14px;transition:var(--transition)}
-.close-btn:hover{background:rgba(232,66,62,0.12);color:var(--red);border-color:rgba(232,66,62,0.25)}
+.close-btn:hover{background:rgba(214,71,76,0.12);color:var(--red);border-color:rgba(214,71,76,0.25)}
 
 /* PROGRESS RING */
 .ring-wrap{display:flex;flex-direction:column;align-items:center;gap:4px}
@@ -324,7 +343,7 @@ tr:hover td{background:rgba(255,255,255,0.025)}
 .notif-toast.show{transform:translateY(0);opacity:1}
 .notif-toast .notif-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
 .notif-toast.success .notif-icon{background:rgba(46,204,113,0.15);color:var(--green)}
-.notif-toast.warning .notif-icon{background:rgba(255,49,49,0.15);color:var(--gold)}
+.notif-toast.warning .notif-icon{background:rgba(214,71,76,0.15);color:var(--gold)}
 .notif-toast.whatsapp .notif-icon{background:rgba(37,211,102,0.15);color:#25d366}
 
 /* SETTINGS */
@@ -333,7 +352,7 @@ tr:hover td{background:rgba(255,255,255,0.025)}
 .setting-info h4{font-size:13px;font-weight:700;margin-bottom:3px}
 .setting-info p{font-size:12px;color:var(--text2)}
 .toggle{width:48px;height:27px;background:var(--border3);border-radius:14px;cursor:pointer;position:relative;transition:.3s cubic-bezier(.4,0,.2,1);flex-shrink:0}
-.toggle.on{background:var(--gold);box-shadow:0 2px 10px rgba(255,49,49,0.3)}
+.toggle.on{background:var(--gold);box-shadow:0 2px 10px rgba(214,71,76,0.3)}
 .toggle::after{content:'';position:absolute;top:3px;right:3px;width:21px;height:21px;border-radius:50%;background:#fff;transition:.3s cubic-bezier(.4,0,.2,1);box-shadow:0 2px 6px rgba(0,0,0,0.3)}
 .toggle.on::after{right:calc(100% - 24px)}
 
@@ -401,7 +420,7 @@ tr:hover td{background:rgba(255,255,255,0.025)}
 /* BULK MSG */
 .msg-template{background:var(--bg4);border:1px solid var(--border2);border-radius:12px;padding:12px;cursor:pointer;transition:var(--transition);margin-bottom:8px}
 .msg-template:hover{border-color:var(--gold2);transform:translateY(-1px)}
-.msg-template.selected{border-color:var(--gold);background:rgba(255,49,49,0.06);box-shadow:0 0 0 1px rgba(255,49,49,0.12)}
+.msg-template.selected{border-color:var(--gold);background:rgba(214,71,76,0.06);box-shadow:0 0 0 1px rgba(214,71,76,0.12)}
 
 /* HISTORY MODAL */
 .hist-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
@@ -426,24 +445,24 @@ tr:hover td{background:rgba(255,255,255,0.025)}
 
 /* TRIAL BANNER */
 .trial-banner{
-  background:linear-gradient(135deg,rgba(255,49,49,0.12),rgba(255,49,49,0.06));
-  border:1px solid rgba(255,49,49,0.3);
+  background:linear-gradient(135deg,rgba(214,71,76,0.12),rgba(214,71,76,0.06));
+  border:1px solid rgba(214,71,76,0.3);
   border-radius:14px;padding:14px 18px;margin-bottom:20px;
   display:flex;align-items:center;gap:12px;
   animation:trialPulse 3s ease-in-out infinite;
 }
-@keyframes trialPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,49,49,0.0)}50%{box-shadow:0 0 0 6px rgba(255,49,49,0.08)}}
+@keyframes trialPulse{0%,100%{box-shadow:0 0 0 0 rgba(214,71,76,0.0)}50%{box-shadow:0 0 0 6px rgba(214,71,76,0.08)}}
 .trial-days-circle{
   width:52px;height:52px;border-radius:50%;
   background:linear-gradient(135deg,var(--gold3),var(--gold),var(--gold2));
   display:flex;flex-direction:column;align-items:center;justify-content:center;
-  flex-shrink:0;box-shadow:0 4px 16px rgba(255,49,49,0.4);
+  flex-shrink:0;box-shadow:0 4px 16px rgba(214,71,76,0.28);
 }
-.trial-days-num{font-family:'Orbitron',monospace;font-weight:900;font-size:18px;color:#000;line-height:1}
-.trial-days-lbl{font-size:8px;color:#000;font-weight:700;opacity:.8}
+.trial-days-num{font-family:'Orbitron',monospace;font-weight:900;font-size:18px;color:#fff;line-height:1}
+.trial-days-lbl{font-size:8px;color:#fff;font-weight:700;opacity:.8}
 .trial-expired-banner{
-  background:linear-gradient(135deg,rgba(232,66,62,0.15),rgba(232,66,62,0.06));
-  border:1px solid rgba(232,66,62,0.4);
+  background:linear-gradient(135deg,rgba(214,71,76,0.15),rgba(214,71,76,0.06));
+  border:1px solid rgba(214,71,76,0.28);
   border-radius:14px;padding:22px 18px;margin-bottom:20px;text-align:center;
   animation:expiredShake .5s ease;
 }
@@ -451,21 +470,21 @@ tr:hover td{background:rgba(255,255,255,0.025)}
 .subscribe-btn{
   width:100%;padding:14px;border-radius:12px;border:none;cursor:pointer;font-family:'Cairo',sans-serif;
   background:linear-gradient(135deg,var(--gold3),var(--gold),var(--gold2));
-  color:#000;font-size:14px;font-weight:900;letter-spacing:.5px;
-  box-shadow:0 6px 24px rgba(255,49,49,0.35);
+  color:#fff;font-size:14px;font-weight:900;letter-spacing:.5px;
+  box-shadow:0 6px 24px rgba(214,71,76,0.25);
   transition:.2s;display:flex;align-items:center;justify-content:center;gap:8px;
 }
-.subscribe-btn:hover{opacity:.92;transform:translateY(-2px);box-shadow:0 10px 32px rgba(255,49,49,0.45)}
+.subscribe-btn:hover{opacity:.92;transform:translateY(-2px);box-shadow:0 10px 32px rgba(214,71,76,0.32)}
 .login-box{background:linear-gradient(145deg,var(--bg2),var(--bg));border:1px solid var(--border2);border-radius:26px;padding:40px;width:400px;max-width:95vw;box-shadow:0 32px 100px rgba(0,0,0,0.8),0 4px 24px rgba(0,0,0,0.5),0 0 0 1px rgba(255,255,255,0.03)}
 .login-logo{text-align:center;margin-bottom:32px}
-.login-logo-icon{width:64px;height:64px;background:linear-gradient(135deg,var(--gold),var(--gold2));border-radius:18px;display:inline-flex;align-items:center;justify-content:center;font-family:'Orbitron',monospace;font-weight:900;font-size:22px;color:#000;margin-bottom:12px}
+.login-logo-icon{width:64px;height:64px;background:linear-gradient(135deg,var(--gold),var(--gold2));border-radius:18px;display:inline-flex;align-items:center;justify-content:center;font-family:'Orbitron',monospace;font-weight:900;font-size:22px;color:#fff;margin-bottom:12px}
 .login-logo h1{font-family:'Orbitron',monospace;font-size:22px;color:var(--gold);font-weight:900;letter-spacing:2px}
 .login-logo p{font-size:13px;color:var(--text3);margin-top:4px}
-.login-error{background:rgba(224,60,60,0.1);border:1px solid rgba(224,60,60,0.25);color:var(--red);border-radius:10px;padding:10px 14px;font-size:13px;margin-bottom:16px;display:none}
+.login-error{background:rgba(158,53,56,0.1);border:1px solid rgba(158,53,56,0.25);color:var(--red);border-radius:10px;padding:10px 14px;font-size:13px;margin-bottom:16px;display:none}
 .role-selector{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
 .role-card{background:var(--bg4);border:2px solid var(--border2);border-radius:16px;padding:16px;text-align:center;cursor:pointer;transition:var(--transition)}
 .role-card:hover{border-color:var(--border3);transform:translateY(-2px)}
-.role-card.selected{border-color:var(--gold);background:rgba(255,49,49,0.08);box-shadow:0 0 0 1px rgba(255,49,49,0.1),0 4px 16px rgba(255,49,49,0.08)}
+.role-card.selected{border-color:var(--gold);background:rgba(214,71,76,0.08);box-shadow:0 0 0 1px rgba(214,71,76,0.1),0 4px 16px rgba(214,71,76,0.08)}
 .role-card i{font-size:24px;margin-bottom:8px;display:block}
 .role-card.selected i{color:var(--gold)}
 .role-card span{font-size:13px;font-weight:700;color:var(--text2)}
@@ -477,7 +496,7 @@ body.role-receptionist .content.admin-only{display:none!important}
 body.role-receptionist .recep-hide{display:none!important}
 
 /* ===== MOBILE MENU TOGGLE ===== */
-.mob-menu-btn{display:none;position:fixed;bottom:20px;left:20px;z-index:200;width:52px;height:52px;border-radius:16px;background:linear-gradient(135deg,var(--gold),var(--gold2));border:none;color:#000;font-size:20px;cursor:pointer;box-shadow:0 4px 20px rgba(255,49,49,0.4);align-items:center;justify-content:center}
+.mob-menu-btn{display:none;position:fixed;bottom:20px;left:20px;z-index:200;width:52px;height:52px;border-radius:16px;background:linear-gradient(135deg,var(--gold),var(--gold2));border:none;color:#fff;font-size:20px;cursor:pointer;box-shadow:0 4px 20px rgba(214,71,76,0.28);align-items:center;justify-content:center}
 .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:99;backdrop-filter:blur(2px)}
 .sidebar-overlay.open{display:block}
 
@@ -657,7 +676,7 @@ body.role-receptionist .recep-hide{display:none!important}
 
     <!-- SETUP PANEL (first time) -->
     <div id="setup-panel" style="display:none">
-      <div style="background:rgba(255,49,49,0.08);border:1px solid rgba(255,49,49,0.25);border-radius:12px;padding:14px;margin-bottom:20px;font-size:13px;color:var(--text2);text-align:center">
+      <div style="background:rgba(214,71,76,0.08);border:1px solid rgba(214,71,76,0.25);border-radius:12px;padding:14px;margin-bottom:20px;font-size:13px;color:var(--text2);text-align:center">
         <i class="fas fa-star" style="color:var(--gold);margin-left:6px"></i>
         <strong style="color:var(--gold)">أهلاً بك في X GYM</strong><br>
         <span style="font-size:12px">أنشئ حسابك الأول للبدء</span>
@@ -755,13 +774,13 @@ body.role-receptionist .recep-hide{display:none!important}
   <div class="sidebar-footer">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
       <div style="display:flex;align-items:center;gap:8px">
-        <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,var(--gold),var(--gold2));display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:#000" id="user-avatar-icon">م</div>
+        <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,var(--gold),var(--gold2));display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:#fff" id="user-avatar-icon">م</div>
         <div>
           <div style="font-size:12px;font-weight:700;color:var(--text)" id="user-display-name">المدير</div>
           <div style="font-size:10px;color:var(--text3)" id="user-role-label">مدير النظام</div>
         </div>
       </div>
-      <button onclick="doLogout()" title="تسجيل الخروج" style="width:30px;height:30px;border-radius:8px;background:rgba(224,60,60,0.1);border:1px solid rgba(224,60,60,0.2);color:var(--red);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px"><i class="fas fa-right-from-bracket"></i></button>
+      <button onclick="doLogout()" title="تسجيل الخروج" style="width:30px;height:30px;border-radius:8px;background:rgba(158,53,56,0.1);border:1px solid rgba(158,53,56,0.2);color:var(--red);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px"><i class="fas fa-right-from-bracket"></i></button>
     </div>
     <div class="gym-status"><div class="status-dot"></div><span style="font-size:12px;font-weight:700">الجيم مفتوح الآن</span></div>
     <div style="font-size:11px;color:var(--text3);margin-top:4px" id="current-time"></div>
@@ -777,7 +796,7 @@ body.role-receptionist .recep-hide{display:none!important}
       <span id="save-indicator" style="font-size:11px;font-weight:700;min-width:60px;text-align:center"></span>
       <div class="topbar-btn" id="theme-toggle-btn" onclick="toggleTheme()" title="تبديل الوضع المظلم/الفاتح"><i class="fas fa-moon" id="theme-icon"></i></div>
       <div class="topbar-btn" id="fs-btn" onclick="toggleFullscreen()" title="ملء الشاشة"><i class="fas fa-expand" id="fs-icon"></i></div>
-      <div class="topbar-btn" id="pwa-install-btn" onclick="installPWA()" title="تثبيت كتطبيق" style="display:none;background:linear-gradient(135deg,rgba(255,49,49,0.15),rgba(255,49,49,0.05));border-color:rgba(255,49,49,0.3);color:var(--gold)"><i class="fas fa-download"></i></div>
+      <div class="topbar-btn" id="pwa-install-btn" onclick="installPWA()" title="تثبيت كتطبيق" style="display:none;background:linear-gradient(135deg,rgba(214,71,76,0.15),rgba(214,71,76,0.05));border-color:rgba(214,71,76,0.3);color:var(--gold)"><i class="fas fa-download"></i></div>
       <div class="topbar-btn" onclick="openExpiryPanel()" title="تنبيهات الاشتراكات" style="position:relative">
         <i class="fas fa-bell"></i>
         <div class="notif-dot" id="expiry-dot" style="display:none"></div>
@@ -866,7 +885,7 @@ body.role-receptionist .recep-hide{display:none!important}
         <div style="font-size:28px;font-weight:900;color:var(--green);line-height:1" id="att-today-in">0</div>
         <div style="font-size:11px;color:var(--text3);margin-top:4px;font-weight:600">دخول اليوم</div>
       </div>
-      <div style="background:linear-gradient(135deg,rgba(224,60,60,0.12),rgba(224,60,60,0.04));border:1px solid rgba(224,60,60,0.2);border-radius:14px;padding:16px;text-align:center">
+      <div style="background:linear-gradient(135deg,rgba(158,53,56,0.12),rgba(158,53,56,0.04));border:1px solid rgba(158,53,56,0.2);border-radius:14px;padding:16px;text-align:center">
         <div style="font-size:28px;font-weight:900;color:var(--red);line-height:1" id="att-today-out">0</div>
         <div style="font-size:11px;color:var(--text3);margin-top:4px;font-weight:600">خروج اليوم</div>
       </div>
@@ -874,7 +893,7 @@ body.role-receptionist .recep-hide{display:none!important}
         <div style="font-size:28px;font-weight:900;color:var(--blue);line-height:1" id="att-today-now">0</div>
         <div style="font-size:11px;color:var(--text3);margin-top:4px;font-weight:600">داخل الآن</div>
       </div>
-      <div style="background:linear-gradient(135deg,rgba(255,49,49,0.12),rgba(255,49,49,0.04));border:1px solid rgba(255,49,49,0.2);border-radius:14px;padding:16px;text-align:center">
+      <div style="background:linear-gradient(135deg,rgba(214,71,76,0.12),rgba(214,71,76,0.04));border:1px solid rgba(214,71,76,0.2);border-radius:14px;padding:16px;text-align:center">
         <div style="font-size:28px;font-weight:900;color:var(--gold);line-height:1" id="att-unique-today">0</div>
         <div style="font-size:11px;color:var(--text3);margin-top:4px;font-weight:600">عضو حاضر</div>
       </div>
@@ -887,7 +906,7 @@ body.role-receptionist .recep-hide{display:none!important}
         <!-- تبويبات الوضع -->
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:14px;background:var(--bg3);border:1px solid var(--border);border-radius:14px;padding:5px">
           <button id="mode-tab-camera" onclick="setAttMode('camera')"
-            style="border:none;border-radius:10px;padding:9px 4px;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;background:var(--gold);color:#000;font-family:'Cairo',sans-serif">
+            style="border:none;border-radius:10px;padding:9px 4px;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;background:var(--gold);color:#fff;font-family:'Cairo',sans-serif">
             <i class="fas fa-camera" style="display:block;font-size:16px;margin-bottom:3px"></i>كاميرا
           </button>
           <button id="mode-tab-reader" onclick="setAttMode('reader')"
@@ -907,15 +926,15 @@ body.role-receptionist .recep-hide{display:none!important}
             <div style="position:absolute;top:8px;right:8px;left:8px;display:flex;gap:6px;z-index:5">
               <select id="camera-select" class="form-select" style="flex:1;font-size:11px;padding:4px 8px;background:rgba(0,0,0,0.75);border-color:rgba(255,255,255,0.15);color:#fff;backdrop-filter:blur(6px)" onchange="switchCamera(this.value)"></select>
               <button class="btn btn-sm" style="background:rgba(0,0,0,0.6);color:#fff;border:1px solid rgba(255,255,255,0.2);padding:4px 10px;backdrop-filter:blur(6px)" onclick="flipCamera()"><i class="fas fa-rotate"></i></button>
-              <button class="btn btn-sm" style="background:rgba(224,60,60,0.7);color:#fff;border:none;padding:4px 10px" onclick="stopAttCamera()"><i class="fas fa-stop"></i></button>
+              <button class="btn btn-sm" style="background:rgba(158,53,56,0.7);color:#fff;border:none;padding:4px 10px" onclick="stopAttCamera()"><i class="fas fa-stop"></i></button>
             </div>
             <div id="cam-scan-overlay" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:4">
               <div style="width:260px;height:90px;position:relative">
-                <div style="position:absolute;top:0;right:0;width:26px;height:26px;border-top:3px solid var(--gold);border-right:3px solid var(--gold);border-radius:0 6px 0 0;box-shadow:0 0 10px rgba(255,49,49,0.7)"></div>
-                <div style="position:absolute;top:0;left:0;width:26px;height:26px;border-top:3px solid var(--gold);border-left:3px solid var(--gold);border-radius:6px 0 0 0;box-shadow:0 0 10px rgba(255,49,49,0.7)"></div>
-                <div style="position:absolute;bottom:0;right:0;width:26px;height:26px;border-bottom:3px solid var(--gold);border-right:3px solid var(--gold);border-radius:0 0 6px 0;box-shadow:0 0 10px rgba(255,49,49,0.7)"></div>
-                <div style="position:absolute;bottom:0;left:0;width:26px;height:26px;border-bottom:3px solid var(--gold);border-left:3px solid var(--gold);border-radius:0 0 0 6px;box-shadow:0 0 10px rgba(255,49,49,0.7)"></div>
-                <div class="scanner-line" style="background:linear-gradient(90deg,transparent,rgba(255,49,49,0.95),transparent);height:2px;box-shadow:0 0 12px rgba(255,49,49,0.9)"></div>
+                <div style="position:absolute;top:0;right:0;width:26px;height:26px;border-top:3px solid var(--gold);border-right:3px solid var(--gold);border-radius:0 6px 0 0;box-shadow:0 0 10px rgba(214,71,76,0.45)"></div>
+                <div style="position:absolute;top:0;left:0;width:26px;height:26px;border-top:3px solid var(--gold);border-left:3px solid var(--gold);border-radius:6px 0 0 0;box-shadow:0 0 10px rgba(214,71,76,0.45)"></div>
+                <div style="position:absolute;bottom:0;right:0;width:26px;height:26px;border-bottom:3px solid var(--gold);border-right:3px solid var(--gold);border-radius:0 0 6px 0;box-shadow:0 0 10px rgba(214,71,76,0.45)"></div>
+                <div style="position:absolute;bottom:0;left:0;width:26px;height:26px;border-bottom:3px solid var(--gold);border-left:3px solid var(--gold);border-radius:0 0 0 6px;box-shadow:0 0 10px rgba(214,71,76,0.45)"></div>
+                <div class="scanner-line" style="background:linear-gradient(90deg,transparent,rgba(214,71,76,0.6),transparent);height:2px;box-shadow:0 0 12px rgba(214,71,76,0.55)"></div>
                 <div style="position:absolute;inset:0;box-shadow:0 0 0 9999px rgba(0,0,0,0.45)"></div>
               </div>
             </div>
@@ -926,7 +945,7 @@ body.role-receptionist .recep-hide{display:none!important}
             </div>
             <!-- overlay تشغيل -->
             <div id="cam-status-overlay" style="position:absolute;inset:0;background:rgba(0,0,0,0.88);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;z-index:10">
-              <div style="width:68px;height:68px;border-radius:20px;background:linear-gradient(135deg,rgba(255,49,49,0.2),rgba(255,49,49,0.05));border:2px solid rgba(255,49,49,0.35);display:flex;align-items:center;justify-content:center">
+              <div style="width:68px;height:68px;border-radius:20px;background:linear-gradient(135deg,rgba(214,71,76,0.2),rgba(214,71,76,0.05));border:2px solid rgba(214,71,76,0.25);display:flex;align-items:center;justify-content:center">
                 <i class="fas fa-camera" style="font-size:30px;color:var(--gold);opacity:.85"></i>
               </div>
               <div style="text-align:center">
@@ -943,8 +962,8 @@ body.role-receptionist .recep-hide{display:none!important}
         <!-- BARCODE READER MODE -->
         <div id="att-mode-reader" style="display:none">
           <div style="background:var(--bg3);border:1px solid var(--border2);border-radius:16px;padding:20px">
-            <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;background:rgba(255,49,49,0.06);border:1px solid rgba(255,49,49,0.15);border-radius:12px;padding:12px">
-              <div style="width:44px;height:44px;border-radius:12px;background:rgba(255,49,49,0.12);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;background:rgba(214,71,76,0.06);border:1px solid rgba(214,71,76,0.15);border-radius:12px;padding:12px">
+              <div style="width:44px;height:44px;border-radius:12px;background:rgba(214,71,76,0.12);display:flex;align-items:center;justify-content:center;flex-shrink:0">
                 <i class="fas fa-barcode" style="font-size:22px;color:var(--gold)"></i>
               </div>
               <div style="flex:1">
@@ -956,7 +975,7 @@ body.role-receptionist .recep-hide{display:none!important}
             <div style="position:relative;margin-bottom:12px">
               <input class="form-input" id="barcode-input"
                 placeholder="⚡ جاهز — اضغط trigger القارئ..."
-                style="text-align:center;font-family:monospace;font-size:16px;letter-spacing:3px;padding:14px;border-color:rgba(255,49,49,0.3);background:rgba(255,49,49,0.04);font-weight:700"
+                style="text-align:center;font-family:monospace;font-size:16px;letter-spacing:3px;padding:14px;border-color:rgba(214,71,76,0.3);background:rgba(214,71,76,0.04);font-weight:700"
                 onkeydown="if(event.key==='Enter'){clearTimeout(window._bcAutoTimeout);scanMember();}"
                 oninput="onBarcodeInputChange(this.value)" autofocus />
               <div id="barcode-typing-indicator" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:10px;color:var(--gold);display:none"><i class="fas fa-keyboard"></i></div>
@@ -984,13 +1003,13 @@ body.role-receptionist .recep-hide{display:none!important}
 
       <!-- عمود السجل -->
       <div style="background:var(--bg3);border:1px solid var(--border);border-radius:16px;overflow:hidden;display:flex;flex-direction:column">
-        <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:linear-gradient(90deg,rgba(255,49,49,0.04),transparent)">
+        <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:linear-gradient(90deg,rgba(214,71,76,0.04),transparent)">
           <div style="display:flex;align-items:center;gap:8px">
             <i class="fas fa-list-ul" style="color:var(--gold)"></i>
             <span style="font-size:14px;font-weight:700">سجل الحضور — اليوم</span>
           </div>
           <div style="display:flex;align-items:center;gap:8px">
-            <span style="background:rgba(255,49,49,0.12);color:var(--gold);border:1px solid rgba(255,49,49,0.2);border-radius:20px;padding:3px 12px;font-size:11px;font-weight:700" id="att-count-badge">0 سجل</span>
+            <span style="background:rgba(214,71,76,0.12);color:var(--gold);border:1px solid rgba(214,71,76,0.2);border-radius:20px;padding:3px 12px;font-size:11px;font-weight:700" id="att-count-badge">0 سجل</span>
           </div>
         </div>
         <div id="attendance-log" style="flex:1;overflow-y:auto;max-height:600px"></div>
@@ -1075,13 +1094,38 @@ body.role-receptionist .recep-hide{display:none!important}
       </div>
     </div>
     <div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">
-      <div class="stat-card green"><div class="stat-icon"><i class="fas fa-arrow-trend-up"></i></div><div class="stat-val" id="total-income">0</div><div class="stat-label">إجمالي الدخل (جنيه)</div></div>
-      <div class="stat-card red"><div class="stat-icon"><i class="fas fa-arrow-trend-down"></i></div><div class="stat-val" id="total-expense">0</div><div class="stat-label">إجمالي المصروفات (جنيه)</div></div>
-      <div class="stat-card gold"><div class="stat-icon"><i class="fas fa-scale-balanced"></i></div><div class="stat-val" id="net-profit">0</div><div class="stat-label">صافي الربح (جنيه)</div></div>
+      <div class="stat-card green"><div class="stat-icon"><i class="fas fa-arrow-trend-up"></i></div><div class="stat-val" id="total-income">0</div><div class="stat-label">دخل الأسبوع (جنيه)</div></div>
+      <div class="stat-card red"><div class="stat-icon"><i class="fas fa-arrow-trend-down"></i></div><div class="stat-val" id="total-expense">0</div><div class="stat-label">مصروفات الأسبوع (جنيه)</div></div>
+      <div class="stat-card gold"><div class="stat-icon"><i class="fas fa-scale-balanced"></i></div><div class="stat-val" id="net-profit">0</div><div class="stat-label">صافي الأسبوع (جنيه)</div></div>
     </div>
+
+    <div class="finance-filter-bar">
+      <div class="week-nav">
+        <button class="week-nav-btn" id="week-prev-btn" onclick="changeFinanceWeek(-1)" title="الأسبوع السابق"><i class="fas fa-chevron-right"></i></button>
+        <div class="week-label-wrap">
+          <div class="week-label" id="week-range-label">—</div>
+          <div class="week-sub"><span class="dot"></span><span id="week-range-sub">—</span></div>
+        </div>
+        <button class="week-nav-btn" id="week-next-btn" onclick="changeFinanceWeek(1)" title="الأسبوع التالي"><i class="fas fa-chevron-left"></i></button>
+      </div>
+      <button class="week-today-btn" id="week-today-btn" onclick="resetFinanceWeek()"><i class="fas fa-calendar-day" style="margin-left:5px"></i>الأسبوع الحالي</button>
+    </div>
+
     <div class="finance-row">
-      <div class="card"><div class="card-header"><div class="card-title" style="color:var(--green)"><i class="fas fa-arrow-up" style="margin-left:6px"></i>الدخل</div></div><div id="income-list"></div></div>
-      <div class="card"><div class="card-header"><div class="card-title" style="color:var(--red)"><i class="fas fa-arrow-down" style="margin-left:6px"></i>المصروفات</div></div><div id="expense-list"></div></div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title" style="color:var(--green)"><i class="fas fa-arrow-up" style="margin-left:6px"></i>الدخل</div>
+          <span class="trans-list-count" id="income-count">0</span>
+        </div>
+        <div id="income-list"></div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title" style="color:var(--red)"><i class="fas fa-arrow-down" style="margin-left:6px"></i>المصروفات</div>
+          <span class="trans-list-count" id="expense-count">0</span>
+        </div>
+        <div id="expense-list"></div>
+      </div>
     </div>
   </div>
 
@@ -1116,14 +1160,14 @@ body.role-receptionist .recep-hide{display:none!important}
     <!-- Filter Tabs -->
     <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
       <button class="btn btn-sm" id="exp-page-tab-2" onclick="switchExpiringTab(2)"
-        style="background:rgba(224,60,60,0.15);color:var(--red);border:1px solid rgba(224,60,60,0.3)">
+        style="background:rgba(158,53,56,0.15);color:var(--red);border:1px solid rgba(158,53,56,0.3)">
         <i class="fas fa-fire"></i> خلال يومين
         <span id="exp-page-count-2" style="background:var(--red);color:#fff;border-radius:8px;padding:1px 7px;margin-right:4px;font-size:10px;font-weight:900">0</span>
       </button>
       <button class="btn btn-sm" id="exp-page-tab-7" onclick="switchExpiringTab(7)"
-        style="background:rgba(255,49,49,0.1);color:var(--gold);border:1px solid rgba(255,49,49,0.2)">
+        style="background:rgba(214,71,76,0.1);color:var(--gold);border:1px solid rgba(214,71,76,0.2)">
         <i class="fas fa-clock"></i> خلال أسبوع
-        <span id="exp-page-count-7" style="background:var(--gold);color:#000;border-radius:8px;padding:1px 7px;margin-right:4px;font-size:10px;font-weight:900">0</span>
+        <span id="exp-page-count-7" style="background:var(--gold);color:#fff;border-radius:8px;padding:1px 7px;margin-right:4px;font-size:10px;font-weight:900">0</span>
       </button>
       <button class="btn btn-sm" id="exp-page-tab-14" onclick="switchExpiringTab(14)"
         style="background:rgba(74,158,255,0.1);color:var(--blue);border:1px solid rgba(74,158,255,0.2)">
@@ -1207,7 +1251,7 @@ body.role-receptionist .recep-hide{display:none!important}
         <div class="card-title"><i class="fas fa-trophy" style="color:var(--gold);margin-left:6px"></i>الأعضاء الأكثر حضوراً</div>
         <div style="display:flex;align-items:center;gap:8px">
           <span class="card-badge" id="top-period-label">هذا الشهر</span>
-          <button class="btn btn-sm" style="background:rgba(224,60,60,0.08);color:var(--red);border:1px solid rgba(224,60,60,0.2);padding:4px 10px;font-size:10px" onclick="resetAttendanceLog()" title="مسح كل سجلات الحضور والبدء من جديد"><i class="fas fa-rotate-left"></i> إعادة تعيين</button>
+          <button class="btn btn-sm" style="background:rgba(158,53,56,0.08);color:var(--red);border:1px solid rgba(158,53,56,0.2);padding:4px 10px;font-size:10px" onclick="resetAttendanceLog()" title="مسح كل سجلات الحضور والبدء من جديد"><i class="fas fa-rotate-left"></i> إعادة تعيين</button>
         </div>
       </div>
       <div id="top-members-list"></div>
@@ -1217,7 +1261,7 @@ body.role-receptionist .recep-hide{display:none!important}
     <div class="card" style="margin-bottom:16px">
       <div class="card-header">
         <div class="card-title"><i class="fas fa-user-slash" style="color:var(--red);margin-left:6px"></i>الأعضاء الأكثر غياباً</div>
-        <span class="card-badge" style="background:rgba(224,60,60,0.1);color:var(--red)" id="absent-period-label">هذا الشهر</span>
+        <span class="card-badge" style="background:rgba(158,53,56,0.1);color:var(--red)" id="absent-period-label">هذا الشهر</span>
       </div>
       <div id="absent-members-list"></div>
     </div>
@@ -1231,9 +1275,9 @@ body.role-receptionist .recep-hide{display:none!important}
       <div id="attendance-heatmap" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:12px"></div>
       <div style="display:flex;align-items:center;gap:6px;margin-top:12px;font-size:11px;color:var(--text3)">
         <span>قليل</span>
-        <div style="width:12px;height:12px;border-radius:3px;background:rgba(255,49,49,0.1)"></div>
-        <div style="width:12px;height:12px;border-radius:3px;background:rgba(255,49,49,0.3)"></div>
-        <div style="width:12px;height:12px;border-radius:3px;background:rgba(255,49,49,0.6)"></div>
+        <div style="width:12px;height:12px;border-radius:3px;background:rgba(214,71,76,0.1)"></div>
+        <div style="width:12px;height:12px;border-radius:3px;background:rgba(214,71,76,0.3)"></div>
+        <div style="width:12px;height:12px;border-radius:3px;background:rgba(214,71,76,0.6)"></div>
         <div style="width:12px;height:12px;border-radius:3px;background:var(--gold)"></div>
         <span>كثير</span>
       </div>
@@ -1293,7 +1337,7 @@ body.role-receptionist .recep-hide{display:none!important}
       </div>
       <div class="card" style="grid-column:1/-1">
         <div class="card-header"><div class="card-title"><i class="fas fa-lock" style="color:var(--gold);margin-left:6px"></i>كلمات المرور</div></div>
-        <div style="background:rgba(255,49,49,0.06);border:1px solid rgba(255,49,49,0.2);border-radius:10px;padding:12px;margin-bottom:18px;font-size:12px;color:var(--text2)">
+        <div style="background:rgba(214,71,76,0.06);border:1px solid rgba(214,71,76,0.2);border-radius:10px;padding:12px;margin-bottom:18px;font-size:12px;color:var(--text2)">
           <i class="fas fa-info-circle" style="color:var(--gold);margin-left:6px"></i>
           <strong style="color:var(--text)">كلمات المرور الحالية:</strong>
           المدير: <code style="background:var(--bg4);padding:2px 8px;border-radius:4px;color:var(--gold)" id="hint-admin-pw">••••••••</code>
@@ -1350,7 +1394,7 @@ body.role-receptionist .recep-hide{display:none!important}
     </div>
 
     <!-- قسم الخصم -->
-    <div style="background:rgba(255,49,49,0.06);border:1px solid rgba(255,49,49,0.18);border-radius:14px;padding:14px;margin-bottom:4px">
+    <div style="background:rgba(214,71,76,0.06);border:1px solid rgba(214,71,76,0.18);border-radius:14px;padding:14px;margin-bottom:4px">
       <div style="font-size:12px;font-weight:700;color:var(--gold);margin-bottom:10px;display:flex;align-items:center;gap:6px"><i class="fas fa-tag"></i>خصم (اختياري)</div>
       <div class="form-row">
         <div class="form-group" style="margin:0">
@@ -1492,7 +1536,7 @@ body.role-receptionist .recep-hide{display:none!important}
       <button class="btn btn-gold btn-sm" onclick="printBarcode()"><i class="fas fa-print"></i>طباعة</button>
       <button class="btn btn-sm" style="background:rgba(74,158,255,0.12);color:var(--blue);border:1px solid rgba(74,158,255,0.3)" onclick="downloadBarcodeImage()"><i class="fas fa-download"></i>تحميل الكارت</button>
       <button class="btn btn-sm" style="background:rgba(37,211,102,0.12);color:#25d366;border:1px solid rgba(37,211,102,0.3)" onclick="sendMemberCardWhatsApp()"><i class="fab fa-whatsapp"></i>إرسال الكارت واتساب</button>
-      <button class="btn btn-sm" style="background:rgba(255,49,49,0.08);color:var(--gold);border:1px solid rgba(255,49,49,0.2)" onclick="sendBarcodeWhatsApp()"><i class="fas fa-comment-dots"></i>نص فقط واتساب</button>
+      <button class="btn btn-sm" style="background:rgba(214,71,76,0.08);color:var(--gold);border:1px solid rgba(214,71,76,0.2)" onclick="sendBarcodeWhatsApp()"><i class="fas fa-comment-dots"></i>نص فقط واتساب</button>
       <button class="btn btn-outline btn-sm" onclick="closeModal('member-barcode-modal')">إغلاق</button>
     </div>
   </div>
@@ -1557,7 +1601,7 @@ body.role-receptionist .recep-hide{display:none!important}
       <input class="form-input" type="date" id="renew-start-date" oninput="updateRenewSummary()">
     </div>
     <!-- خصم التجديد -->
-    <div style="background:rgba(255,49,49,0.06);border:1px solid rgba(255,49,49,0.18);border-radius:12px;padding:12px;margin-bottom:12px">
+    <div style="background:rgba(214,71,76,0.06);border:1px solid rgba(214,71,76,0.18);border-radius:12px;padding:12px;margin-bottom:12px">
       <div style="font-size:12px;font-weight:700;color:var(--gold);margin-bottom:8px"><i class="fas fa-tag" style="margin-left:5px"></i>خصم (اختياري)</div>
       <div class="form-row">
         <div class="form-group" style="margin:0"><label class="form-label">نوع الخصم</label>
@@ -1604,9 +1648,9 @@ document.querySelectorAll('.nav-item').forEach(item=>{
   item.addEventListener('click',()=>{if(window.innerWidth<=768)closeMobileMenu();});
 });
 
-const COLORS=['#FF3131','#4a9eff','#2ecc71','#e03c3c','#9b59b6','#e67e22','#1abc9c'];
-const AVATAR_COLORS=['rgba(255,49,49,0.15)','rgba(74,158,255,0.15)','rgba(46,204,113,0.15)','rgba(224,60,60,0.15)','rgba(155,89,182,0.15)'];
-const AVATAR_TEXT=['#FF3131','#4a9eff','#2ecc71','#e03c3c','#9b59b6'];
+const COLORS=['#D6474C','#4a9eff','#2ecc71','#e03c3c','#9b59b6','#e67e22','#1abc9c'];
+const AVATAR_COLORS=['rgba(214,71,76,0.15)','rgba(74,158,255,0.15)','rgba(46,204,113,0.15)','rgba(158,53,56,0.15)','rgba(155,89,182,0.15)'];
+const AVATAR_TEXT=['#D6474C','#4a9eff','#2ecc71','#e03c3c','#9b59b6'];
 
 // ===== DEFAULT DATA =====
 const DEFAULT_MEMBERS=[];
@@ -1908,8 +1952,8 @@ async function sbConnect(){
     setTimeout(()=>closeModal('supabase-config-modal'),1800);
     showNotif('تم ربط Supabase بنجاح','success');
   }catch(e){
-    box.style.background='rgba(224,60,60,0.08)';
-    box.style.border='1px solid rgba(224,60,60,0.2)';
+    box.style.background='rgba(158,53,56,0.08)';
+    box.style.border='1px solid rgba(158,53,56,0.2)';
     box.style.color='var(--red)';
     box.innerHTML='<i class="fas fa-triangle-exclamation" style="margin-left:6px"></i>خطأ: '+(e.message||'تأكد من الـ URL والـ Key وتشغيل SQL Script');
   }
@@ -2330,7 +2374,7 @@ function renderDashboard(){
   const chart=document.getElementById('week-chart');
   chart.innerHTML=weekData.map(w=>`<div class="bar-wrap">
     <div class="bar-val">${w.val>=1000?(w.val/1000).toFixed(1)+'k':w.val||'—'}</div>
-    <div class="bar" style="height:${Math.max((w.val/wmx)*120,4)}px;background:${w.today?'linear-gradient(180deg,var(--gold),var(--gold2))':'rgba(255,49,49,0.35)'};opacity:${w.today?1:0.8}" title="${w.val.toLocaleString()} جنيه"></div>
+    <div class="bar" style="height:${Math.max((w.val/wmx)*120,4)}px;background:${w.today?'linear-gradient(180deg,var(--gold),var(--gold2))':'rgba(214,71,76,0.25)'};opacity:${w.today?1:0.8}" title="${w.val.toLocaleString()} جنيه"></div>
     <div class="bar-label">${w.label}${w.today?' ●':''}</div>
   </div>`).join('');
 
@@ -2447,8 +2491,8 @@ function switchExpiringTab(tab){
     const isExpired=m.status==='expired';
     const isUrgent=m.days<=2;
     const color=isExpired?'var(--purple)':isUrgent?'var(--red)':m.days<=7?'var(--gold)':'var(--blue)';
-    const bgColor=isExpired?'rgba(155,89,182,0.08)':isUrgent?'rgba(224,60,60,0.08)':m.days<=7?'rgba(255,49,49,0.06)':'rgba(74,158,255,0.06)';
-    const borderColor=isExpired?'rgba(155,89,182,0.2)':isUrgent?'rgba(224,60,60,0.2)':m.days<=7?'rgba(255,49,49,0.15)':'rgba(74,158,255,0.15)';
+    const bgColor=isExpired?'rgba(155,89,182,0.08)':isUrgent?'rgba(158,53,56,0.08)':m.days<=7?'rgba(214,71,76,0.06)':'rgba(74,158,255,0.06)';
+    const borderColor=isExpired?'rgba(155,89,182,0.2)':isUrgent?'rgba(158,53,56,0.2)':m.days<=7?'rgba(214,71,76,0.15)':'rgba(74,158,255,0.15)';
     const daysLabel=isExpired?'منتهي':m.days===0?'ينتهي اليوم':m.days===1?'ينتهي غداً':`ينتهي خلال ${m.days} يوم`;
     const pct=Math.max(0,Math.min(100,m.days/30*100));
     return `<div style="display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:12px;background:${bgColor};margin-bottom:10px;border:1px solid ${borderColor};transition:.2s">
@@ -2471,7 +2515,7 @@ function switchExpiringTab(tab){
       </div>
       <!-- الإجراءات -->
       <div style="display:flex;flex-direction:column;gap:7px;flex-shrink:0">
-        <button class="btn btn-sm" style="background:rgba(255,49,49,0.12);color:var(--gold);border:1px solid rgba(255,49,49,0.25);padding:6px 12px" onclick="openRenewModal('${m.id}')"><i class="fas fa-rotate"></i>تجديد</button>
+        <button class="btn btn-sm" style="background:rgba(214,71,76,0.12);color:var(--gold);border:1px solid rgba(214,71,76,0.25);padding:6px 12px" onclick="openRenewModal('${m.id}')"><i class="fas fa-rotate"></i>تجديد</button>
         <button class="btn btn-sm" style="background:rgba(37,211,102,0.1);color:#25d366;border:1px solid rgba(37,211,102,0.25);padding:6px 12px" onclick="sendWA('${m.phone}','${m.name}')"><i class="fab fa-whatsapp"></i>تذكير</button>
       </div>
     </div>`;
@@ -2599,7 +2643,7 @@ function renderMemberCard(m){
       <div class="mc-avatar" style="background:${AVATAR_COLORS[m.ci]};color:${AVATAR_TEXT[m.ci]}">${m.name.split(' ').map(w=>w[0]).join('')}</div>
       <div style="flex:1">
         <div class="mc-name">${m.name} <span style="font-size:10px;color:var(--text3);margin-right:4px">${m.gender==='female'?'👩':'👨'}</span></div>
-        <div class="mc-id">${m.id}${m.discountAmount>0?` <span style="font-size:9px;background:rgba(232,66,62,0.12);color:var(--red);padding:1px 5px;border-radius:4px;margin-right:4px">خصم ${m.discountAmount.toLocaleString()} ج</span>`:''}
+        <div class="mc-id">${m.id}${m.discountAmount>0?` <span style="font-size:9px;background:rgba(214,71,76,0.12);color:var(--red);padding:1px 5px;border-radius:4px;margin-right:4px">خصم ${m.discountAmount.toLocaleString()} ج</span>`:''}
         </div>
       </div>
       <span class="tag ${stClass[m.status]||'pending'}">${m.status==='active'?'نشط':m.status==='expired'?'منتهي':m.status==='frozen'?'مجمد':'معلق'}</span>
@@ -2616,7 +2660,7 @@ function renderMemberCard(m){
       <button class="btn btn-sm btn-outline" onclick="event.stopPropagation();openRenewModal('${m.id}')"><i class="fas fa-rotate"></i>تجديد</button>
       <button class="btn btn-sm" style="background:rgba(74,158,255,0.1);color:var(--blue);border:1px solid rgba(74,158,255,0.2)" onclick="event.stopPropagation();openFreezeModal('${m.id}')" title="تجميد"><i class="fas fa-snowflake"></i></button>
       <button class="btn btn-sm" style="background:rgba(155,89,182,0.1);color:var(--purple);border:1px solid rgba(155,89,182,0.2)" onclick="event.stopPropagation();openMemberHistory('${m.id}')" title="السجل"><i class="fas fa-history"></i></button>
-      <button class="btn btn-sm" style="background:rgba(255,49,49,0.1);color:var(--gold);border:1px solid rgba(255,49,49,0.2)" onclick="event.stopPropagation();viewMember('${m.id}')"><i class="fas fa-barcode"></i></button>
+      <button class="btn btn-sm" style="background:rgba(214,71,76,0.1);color:var(--gold);border:1px solid rgba(214,71,76,0.2)" onclick="event.stopPropagation();viewMember('${m.id}')"><i class="fas fa-barcode"></i></button>
       <button class="btn btn-sm" style="background:rgba(46,204,113,0.1);color:var(--green);border:1px solid rgba(46,204,113,0.2)" onclick="event.stopPropagation();openReceiptModal('${m.id}')" title="إيصال"><i class="fas fa-receipt"></i></button>
       <button class="btn btn-sm" style="background:var(--bg4);color:var(--text2);border:1px solid var(--border)" onclick="event.stopPropagation();openEditMember('${m.id}')"><i class="fas fa-pen"></i></button>
     </div>
@@ -2735,7 +2779,7 @@ function renderAttendanceLog(){
         <div style="font-size:10px;color:var(--text3);margin-top:1px">${mData.id}</div>
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0">
-        <span style="background:${isIn?'rgba(39,199,112,0.12)':'rgba(224,60,60,0.12)'};color:${isIn?'var(--green)':'var(--red)'};border-radius:20px;padding:2px 9px;font-size:10px;font-weight:800">
+        <span style="background:${isIn?'rgba(39,199,112,0.12)':'rgba(158,53,56,0.12)'};color:${isIn?'var(--green)':'var(--red)'};border-radius:20px;padding:2px 9px;font-size:10px;font-weight:800">
           <i class="fas ${isIn?'fa-right-to-bracket':'fa-right-from-bracket'}" style="margin-left:3px"></i>${statusLabel}
         </span>
         <span style="font-size:10px;color:var(--text3)">${timeStr}</span>
@@ -2746,25 +2790,58 @@ function renderAttendanceLog(){
   document.getElementById('att-count-badge').textContent=displayLogs.length+' سجل اليوم';
 }
 
+let financeWeekOffset=0;
+function getFinanceWeekRange(offset){
+  const now=new Date();
+  const day=now.getDay(); // 0=Sun...6=Sat
+  const diffToSat=(day-6+7)%7; // days since last Saturday
+  const start=new Date(now.getFullYear(),now.getMonth(),now.getDate()-diffToSat+offset*7);
+  const end=new Date(start.getFullYear(),start.getMonth(),start.getDate()+6);
+  return {start,end};
+}
+function dstr(d){const p=n=>String(n).padStart(2,'0');return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;}
+function changeFinanceWeek(delta){
+  if(delta>0&&financeWeekOffset>=0)return;
+  financeWeekOffset+=delta;
+  renderFinance();
+}
+function resetFinanceWeek(){financeWeekOffset=0;renderFinance();}
+
 function renderFinance(){
-  const totalInc=transactions.income.reduce((s,t)=>s+t.amount,0);
-  const totalExp=transactions.expense.reduce((s,t)=>s+t.amount,0);
+  const {start,end}=getFinanceWeekRange(financeWeekOffset);
+  const startStr=dstr(start),endStr=dstr(end);
+  const fmtShort=d=>d.toLocaleDateString('ar-EG',{day:'numeric',month:'short'});
+  document.getElementById('week-range-label').textContent=`${fmtShort(start)} — ${fmtShort(end)}`;
+  document.getElementById('week-range-sub').textContent=financeWeekOffset===0?'الأسبوع الحالي':(financeWeekOffset<0?`قبل ${Math.abs(financeWeekOffset)} أسبوع`:`بعد ${financeWeekOffset} أسبوع`);
+  document.getElementById('week-next-btn').disabled=financeWeekOffset>=0;
+  document.getElementById('week-today-btn').disabled=financeWeekOffset===0;
+
+  const weekIncome=transactions.income.filter(t=>t.date>=startStr&&t.date<=endStr).sort((a,b)=>b.date.localeCompare(a.date));
+  const weekExpense=transactions.expense.filter(t=>t.date>=startStr&&t.date<=endStr).sort((a,b)=>b.date.localeCompare(a.date));
+
+  const totalInc=weekIncome.reduce((s,t)=>s+t.amount,0);
+  const totalExp=weekExpense.reduce((s,t)=>s+t.amount,0);
   const net=totalInc-totalExp;
   document.getElementById('total-income').textContent=totalInc.toLocaleString('ar-EG');
   document.getElementById('total-expense').textContent=totalExp.toLocaleString('ar-EG');
   document.getElementById('net-profit').textContent=net.toLocaleString('ar-EG');
+  document.getElementById('income-count').textContent=weekIncome.length+' عملية';
+  document.getElementById('expense-count').textContent=weekExpense.length+' عملية';
+
   const incIcons={اشتراك:'fa-id-card','بيع':'fa-shopping-bag',تدريب:'fa-dumbbell',أخرى:'fa-circle-dollar'};
   const expIcons={إيجار:'fa-building',كهرباء:'fa-bolt',مياه:'fa-droplet',رواتب:'fa-users',صيانة:'fa-wrench',منظفات:'fa-spray-can',تسويق:'fa-bullhorn',أخرى:'fa-receipt'};
-  document.getElementById('income-list').innerHTML=transactions.income.map(t=>`<div class="trans-item">
+
+  document.getElementById('income-list').innerHTML=weekIncome.length?weekIncome.map((t,i)=>`<div class="trans-item" style="animation-delay:${i*.03}s">
     <div class="trans-icon" style="background:rgba(46,204,113,0.1);color:var(--green)"><i class="fas ${Object.keys(incIcons).find(k=>t.type.includes(k))?incIcons[Object.keys(incIcons).find(k=>t.type.includes(k))]:'fa-coins'}"></i></div>
     <div style="flex:1;padding:0 10px"><div style="font-size:13px;font-weight:700">${t.type}</div><div style="font-size:11px;color:var(--text3)">${t.date} ${t.note?'• '+t.note:''}</div></div>
     <div class="trans-amount income">+${t.amount.toLocaleString()} ج</div>
-  </div>`).join('');
-  document.getElementById('expense-list').innerHTML=transactions.expense.map(t=>`<div class="trans-item">
-    <div class="trans-icon" style="background:rgba(224,60,60,0.1);color:var(--red)"><i class="fas ${Object.keys(expIcons).find(k=>t.type.includes(k))?expIcons[Object.keys(expIcons).find(k=>t.type.includes(k))]:'fa-receipt'}"></i></div>
+  </div>`).join(''):`<div class="trans-empty"><i class="fas fa-inbox"></i>لا يوجد دخل مسجل في هذا الأسبوع</div>`;
+
+  document.getElementById('expense-list').innerHTML=weekExpense.length?weekExpense.map((t,i)=>`<div class="trans-item" style="animation-delay:${i*.03}s">
+    <div class="trans-icon" style="background:rgba(158,53,56,0.1);color:var(--red)"><i class="fas ${Object.keys(expIcons).find(k=>t.type.includes(k))?expIcons[Object.keys(expIcons).find(k=>t.type.includes(k))]:'fa-receipt'}"></i></div>
     <div style="flex:1;padding:0 10px"><div style="font-size:13px;font-weight:700">${t.type}</div><div style="font-size:11px;color:var(--text3)">${t.date} ${t.note?'• '+t.note:''}</div></div>
     <div class="trans-amount expense">-${t.amount.toLocaleString()} ج</div>
-  </div>`).join('');
+  </div>`).join(''):`<div class="trans-empty"><i class="fas fa-inbox"></i>لا يوجد مصروفات مسجلة في هذا الأسبوع</div>`;
 }
 
 function renderReports(){
@@ -2825,7 +2902,7 @@ function renderReports(){
   document.getElementById('peak-chart').innerHTML=hvals.map((v,i)=>`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px">
     <div style="font-size:9px;color:${v===hmx&&v>0?'var(--gold)':'var(--text3)'};font-weight:700;min-height:14px">${v>0?v:''}</div>
     <div style="width:100%;flex:1;display:flex;align-items:flex-end">
-      <div style="width:100%;height:${Math.max((v/hmx)*100,v>0?5:2)}%;background:${v===hmx&&v>0?'linear-gradient(180deg,var(--gold3),var(--gold2))':'rgba(255,49,49,0.28)'};border-radius:4px 4px 0 0;transition:.4s cubic-bezier(.4,0,.2,1);min-height:${v>0?'8px':'3px'}" title="${v} شخص الساعة ${hourLabels[i]}:00"></div>
+      <div style="width:100%;height:${Math.max((v/hmx)*100,v>0?5:2)}%;background:${v===hmx&&v>0?'linear-gradient(180deg,var(--gold3),var(--gold2))':'rgba(214,71,76,0.28)'};border-radius:4px 4px 0 0;transition:.4s cubic-bezier(.4,0,.2,1);min-height:${v>0?'8px':'3px'}" title="${v} شخص الساعة ${hourLabels[i]}:00"></div>
     </div>
   </div>`).join('');
   document.getElementById('peak-labels').innerHTML=hourLabels.map((h,i)=>`<span style="font-size:${i%2===0?'10':'9'}px;opacity:${i%2===0?1:0.5}">${h}</span>`).join('');
@@ -2921,7 +2998,7 @@ function renderReports(){
       <div class="att-avatar" style="background:${AVATAR_COLORS[m.ci%5]};color:${AVATAR_TEXT[m.ci%5]};width:32px;height:32px;font-size:11px">${m.name.split(' ').map(w=>w[0]).join('')}</div>
       <div style="flex:1;min-width:0">
         <div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${m.name}</div>
-        <div style="margin-top:3px"><span style="background:${isAbsent?'rgba(224,60,60,0.12)':'rgba(255,49,49,0.12)'};color:${risk};padding:1px 7px;border-radius:4px;font-size:10px;font-weight:700">${isAbsent?'غائب تماماً':'أقل من المتوسط'}</span></div>
+        <div style="margin-top:3px"><span style="background:${isAbsent?'rgba(158,53,56,0.12)':'rgba(214,71,76,0.12)'};color:${risk};padding:1px 7px;border-radius:4px;font-size:10px;font-weight:700">${isAbsent?'غائب تماماً':'أقل من المتوسط'}</span></div>
       </div>
       <div style="text-align:center;flex-shrink:0">
         <div style="font-size:16px;font-weight:900;color:${risk};font-family:'Orbitron',monospace">${m.visits}</div>
@@ -2946,7 +3023,7 @@ function renderReports(){
   const heatMax=Math.max(...heatData.map(h=>h.cnt),1);
   heatmap.innerHTML=heatData.map(h=>{
     const intensity=h.cnt/heatMax;
-    const bg=h.cnt===0?'rgba(255,49,49,0.06)':intensity<0.3?'rgba(255,49,49,0.2)':intensity<0.6?'rgba(255,49,49,0.5)':'var(--gold)';
+    const bg=h.cnt===0?'rgba(214,71,76,0.06)':intensity<0.3?'rgba(214,71,76,0.2)':intensity<0.6?'rgba(214,71,76,0.5)':'var(--gold)';
     const isToday=h.date===new Date().toISOString().split('T')[0];
     const dayNum=new Date(h.date).getDate();
     return `<div title="${h.date}: ${h.cnt} زيارة" style="width:30px;height:30px;border-radius:5px;background:${bg};display:flex;align-items:center;justify-content:center;font-size:${h.cnt>0?'9':'8'}px;color:${h.cnt>0?'#000':'var(--text3)'};font-weight:700;border:${isToday?'2px solid var(--gold)':'2px solid transparent'}">${h.cnt||dayNum}</div>`;
@@ -2987,7 +3064,7 @@ function renderSubscriptions(){
     <div class="price-period">${DURATIONS[k]?DURATIONS[k]+' يوم':'—'} | جنيه مصري</div>
     <div style="display:flex;gap:6px;margin-top:10px">
       <button class="btn btn-outline btn-sm" style="flex:1;font-size:11px" onclick="editPackage('${k}')"><i class="fas fa-edit"></i>تعديل</button>
-      <button class="btn btn-sm" style="background:rgba(224,60,60,0.1);color:var(--red);border:1px solid rgba(224,60,60,0.2)" onclick="deletePackage('${k}')"><i class="fas fa-trash"></i></button>
+      <button class="btn btn-sm" style="background:rgba(158,53,56,0.1);color:var(--red);border:1px solid rgba(158,53,56,0.2)" onclick="deletePackage('${k}')"><i class="fas fa-trash"></i></button>
     </div>
   </div>`).join('');
   // جدول الاشتراكات
@@ -3001,7 +3078,7 @@ function renderSubscriptions(){
     <td style="display:flex;gap:6px">
       <button class="btn btn-sm btn-outline" onclick="openRenewModal('${m.id}')"><i class="fas fa-rotate"></i>تجديد</button>
       <button class="btn btn-sm" style="background:rgba(74,158,255,0.1);color:var(--blue);border:1px solid rgba(74,158,255,0.2)" onclick="openEditMember('${m.id}')"><i class="fas fa-pen"></i></button>
-      <button class="btn btn-sm" style="background:rgba(255,49,49,0.1);color:var(--gold);border:1px solid rgba(255,49,49,0.2)" onclick="viewMember('${m.id}')"><i class="fas fa-barcode"></i></button>
+      <button class="btn btn-sm" style="background:rgba(214,71,76,0.1);color:var(--gold);border:1px solid rgba(214,71,76,0.2)" onclick="viewMember('${m.id}')"><i class="fas fa-barcode"></i></button>
     </td>
   </tr>`).join('')}</tbody>`;
 }
@@ -3020,11 +3097,11 @@ function renderPriceSettings(){
         </div>
         <div style="font-size:14px;font-weight:700;color:var(--gold)">${(prices[k]||0).toLocaleString()} ج</div>
         <button class="btn btn-sm" style="background:rgba(74,158,255,0.1);color:var(--blue);border:1px solid rgba(74,158,255,0.2);padding:5px 10px" onclick="editPackage('${k}')"><i class="fas fa-pen"></i></button>
-        <button class="btn btn-sm" style="background:rgba(224,60,60,0.1);color:var(--red);border:1px solid rgba(224,60,60,0.2);padding:5px 10px" onclick="deletePackage('${k}')"><i class="fas fa-trash"></i></button>
+        <button class="btn btn-sm" style="background:rgba(158,53,56,0.1);color:var(--red);border:1px solid rgba(158,53,56,0.2);padding:5px 10px" onclick="deletePackage('${k}')"><i class="fas fa-trash"></i></button>
       </div>`).join('')
     :'<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px"><i class="fas fa-box-open" style="font-size:28px;display:block;margin-bottom:8px;opacity:.3"></i>لا توجد باقات — أضف أول باقة أدناه</div>'}
     </div>
-    <div style="border:1px solid var(--border2);border-radius:12px;padding:14px;background:rgba(255,49,49,0.03)">
+    <div style="border:1px solid var(--border2);border-radius:12px;padding:14px;background:rgba(214,71,76,0.03)">
       <div style="font-size:13px;font-weight:700;margin-bottom:12px;color:var(--gold)"><i class="fas fa-plus" style="margin-left:6px"></i>إضافة باقة جديدة</div>
       <div class="form-row" style="margin-bottom:10px">
         <div class="form-group" style="margin:0"><label class="form-label">اسم الباقة</label><input class="form-input" id="pkg-name" placeholder="مثال: شهري"></div>
@@ -3639,7 +3716,7 @@ function getBarcodeDataURL(){
     ctx.fillStyle='#ffffff';ctx.fillRect(0,0,600,260);
     // شريط ذهبي علوي
     const grad=ctx.createLinearGradient(0,0,600,0);
-    grad.addColorStop(0,'#FF3131');grad.addColorStop(1,'#cc2525');
+    grad.addColorStop(0,'#D6474C');grad.addColorStop(1,'#9E3538');
     ctx.fillStyle=grad;ctx.fillRect(0,0,600,8);
     // اسم الجيم
     ctx.fillStyle='#111';ctx.font='bold 26px Arial';ctx.textAlign='center';
@@ -4117,7 +4194,7 @@ function _recordAttendance(m){
         <div style="flex:1">
           <div style="font-size:15px;font-weight:800">${m.name}</div>
           <div style="font-size:11px;color:var(--text3);margin-top:2px">${m.id} · ${priceNames[m.type]||m.type}</div>
-          <div style="margin-top:8px;background:rgba(224,60,60,0.1);border:1px solid rgba(224,60,60,0.25);border-radius:8px;padding:8px 10px">
+          <div style="margin-top:8px;background:rgba(158,53,56,0.1);border:1px solid rgba(158,53,56,0.25);border-radius:8px;padding:8px 10px">
             <div style="font-size:12px;font-weight:700;color:var(--red)"><i class="fas fa-ban" style="margin-left:5px"></i>تم تسجيل الحضور اليوم مسبقاً</div>
             <div style="font-size:11px;color:var(--text3);margin-top:4px">وقت التسجيل: <b style="color:var(--text)">${lastTime}</b></div>
           </div>
@@ -4133,7 +4210,7 @@ function _recordAttendance(m){
     if(flashResult&&_attMode==='camera'){
       if(flashName)flashName.textContent='⚠️ '+m.name+' — مسجّل بالفعل';
       if(flashInfo)flashInfo.textContent='تم تسجيل حضوره اليوم الساعة '+lastTime;
-      flashResult.style.background='linear-gradient(0deg,rgba(224,60,60,0.9),transparent)';
+      flashResult.style.background='linear-gradient(0deg,rgba(158,53,56,0.9),transparent)';
       flashResult.style.display='block';
       setTimeout(()=>{if(flashResult)flashResult.style.display='none';},3500);
     }
@@ -4150,10 +4227,10 @@ function _recordAttendance(m){
         <div style="flex:1">
           <div style="font-size:15px;font-weight:800">${m.name}</div>
           <div style="font-size:11px;color:var(--text3);margin-top:2px">${m.id} · ${priceNames[m.type]||m.type}</div>
-          <div style="margin-top:8px;background:rgba(224,60,60,0.12);border:1px solid rgba(224,60,60,0.35);border-radius:10px;padding:12px 14px">
+          <div style="margin-top:8px;background:rgba(158,53,56,0.12);border:1px solid rgba(158,53,56,0.35);border-radius:10px;padding:12px 14px">
             <div style="font-size:14px;font-weight:900;color:var(--red)"><i class="fas fa-lock" style="margin-left:6px"></i>مرفوض — الاشتراك منتهي</div>
             <div style="font-size:11px;color:var(--text3);margin-top:5px">انتهى في: <b style="color:var(--red)">${m.end||'—'}</b></div>
-            <div style="font-size:11px;color:var(--text2);margin-top:4px;background:rgba(224,60,60,0.08);border-radius:6px;padding:6px 8px">
+            <div style="font-size:11px;color:var(--text2);margin-top:4px;background:rgba(158,53,56,0.08);border-radius:6px;padding:6px 8px">
               <i class="fas fa-triangle-exclamation" style="color:var(--gold);margin-left:4px"></i>
               يجب تجديد الاشتراك للسماح بالدخول
             </div>
@@ -4170,7 +4247,7 @@ function _recordAttendance(m){
     if(flashResult&&_attMode==='camera'){
       if(flashName)flashName.textContent='🔴 '+m.name+' — مرفوض';
       if(flashInfo)flashInfo.textContent='الاشتراك منتهي — يجب التجديد';
-      flashResult.style.background='linear-gradient(0deg,rgba(224,60,60,0.95),transparent)';
+      flashResult.style.background='linear-gradient(0deg,rgba(158,53,56,0.95),transparent)';
       flashResult.style.display='block';
       setTimeout(()=>{if(flashResult)flashResult.style.display='none';},4000);
     }
@@ -4376,9 +4453,9 @@ function switchExpTab(days){
 
   container.innerHTML=list.sort((a,b)=>a.days-b.days).map(m=>{
     const urgency=m.days===0?'var(--red)':m.days<=2?'var(--red)':m.days<=5?'var(--gold)':'var(--text2)';
-    const urgencyBg=m.days===0?'rgba(224,60,60,0.12)':m.days<=2?'rgba(224,60,60,0.08)':'rgba(255,49,49,0.08)';
+    const urgencyBg=m.days===0?'rgba(158,53,56,0.12)':m.days<=2?'rgba(158,53,56,0.08)':'rgba(214,71,76,0.08)';
     const daysLabel=m.days===0?'انتهى اليوم':m.days===1?'ينتهي غداً':`ينتهي خلال ${m.days} يوم`;
-    return `<div style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:12px;background:${urgencyBg};margin-bottom:8px;border:1px solid ${m.days<=2?'rgba(224,60,60,0.2)':'rgba(255,49,49,0.1)'}">
+    return `<div style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:12px;background:${urgencyBg};margin-bottom:8px;border:1px solid ${m.days<=2?'rgba(158,53,56,0.2)':'rgba(214,71,76,0.1)'}">
       <div class="mc-avatar" style="background:${AVATAR_COLORS[m.ci%5]};color:${AVATAR_TEXT[m.ci%5]};width:40px;height:40px;font-size:13px;flex-shrink:0">${m.name.split(' ').map(w=>w[0]).join('')}</div>
       <div style="flex:1;min-width:0">
         <div style="font-size:14px;font-weight:700;margin-bottom:2px">${m.name}</div>
@@ -4427,7 +4504,7 @@ function doGlobalSearch(q){
         <span style="font-size:10px;padding:2px 8px;border-radius:6px;font-weight:700;background:${stColors[m.status]}22;color:${stColors[m.status]};border:1px solid ${stColors[m.status]}44">${stAr[m.status]||'—'}</span>
         <div style="display:flex;gap:4px">
           <button class="btn btn-sm" style="background:rgba(37,211,102,0.1);color:#25d366;border:1px solid rgba(37,211,102,0.2);padding:4px 8px" onclick="event.stopPropagation();sendWA('${m.phone}','${m.name}')"><i class="fab fa-whatsapp"></i></button>
-          <button class="btn btn-sm" style="background:rgba(255,49,49,0.1);color:var(--gold);border:1px solid rgba(255,49,49,0.2);padding:4px 8px" onclick="event.stopPropagation();closeGlobalSearch();setTimeout(()=>openRenewModal('${m.id}'),200)"><i class="fas fa-rotate"></i></button>
+          <button class="btn btn-sm" style="background:rgba(214,71,76,0.1);color:var(--gold);border:1px solid rgba(214,71,76,0.2);padding:4px 8px" onclick="event.stopPropagation();closeGlobalSearch();setTimeout(()=>openRenewModal('${m.id}'),200)"><i class="fas fa-rotate"></i></button>
         </div>
       </div>
     </div>`;
@@ -4586,7 +4663,7 @@ function openBulkMsg(){
 function renderMsgTemplates(){
   const c=document.getElementById('msg-templates');
   c.innerHTML=MSG_TEMPLATES.map(t=>`
-    <div style="display:flex;align-items:center;gap:10px;background:${_selectedMsgTemplate===t.id?'rgba(255,49,49,0.08)':'var(--bg3)'};border:1px solid ${_selectedMsgTemplate===t.id?'var(--gold)':'var(--border)'};border-radius:10px;padding:10px 12px;cursor:pointer;margin-bottom:6px;transition:all .2s" 
+    <div style="display:flex;align-items:center;gap:10px;background:${_selectedMsgTemplate===t.id?'rgba(214,71,76,0.08)':'var(--bg3)'};border:1px solid ${_selectedMsgTemplate===t.id?'var(--gold)':'var(--border)'};border-radius:10px;padding:10px 12px;cursor:pointer;margin-bottom:6px;transition:all .2s" 
       onclick="selectMsgTemplate('${t.id}')"
       onmouseover="if('${t.id}'!==_selectedMsgTemplate)this.style.borderColor='var(--border2)'"
       onmouseout="if('${t.id}'!==_selectedMsgTemplate)this.style.borderColor='var(--border)'">
@@ -4621,7 +4698,7 @@ function setBulkFilter(f){
     const colors={all:'var(--gold)',active:'var(--green)',expiring:'var(--gold)',expired:'var(--red)'};
     const c=colors[id]||'var(--gold)';
     el.style.borderColor=isActive?c:'var(--border)';
-    el.style.background=isActive?`rgba(${id==='active'?'39,199,112':id==='expired'?'224,60,60':'255,49,49'},0.1)`:'var(--bg3)';
+    el.style.background=isActive?`rgba(${id==='active'?'39,199,112':id==='expired'?'158,53,56':'214,71,76'},0.1)`:'var(--bg3)';
     el.style.color=isActive?c:'var(--text2)';
   });
   renderBulkRecipients();
@@ -4809,7 +4886,7 @@ function renderCoupons(){
       <div style="font-size:12px;color:var(--text2);margin-top:4px">${cp.type==='percent'?cp.value+'% خصم':cp.value.toLocaleString()+' جنيه خصم'} · استُخدم ${cp.uses||0} مرة</div>
     </div>
     <div style="display:flex;gap:8px;align-items:center">
-      <span style="font-size:12px;padding:3px 10px;border-radius:8px;font-weight:700;background:${cp.active?'rgba(46,204,113,0.12)':'rgba(224,60,60,0.12)'};color:${cp.active?'var(--green)':'var(--red)'}">${cp.active?'نشط':'متوقف'}</span>
+      <span style="font-size:12px;padding:3px 10px;border-radius:8px;font-weight:700;background:${cp.active?'rgba(46,204,113,0.12)':'rgba(158,53,56,0.12)'};color:${cp.active?'var(--green)':'var(--red)'}">${cp.active?'نشط':'متوقف'}</span>
       <button class="btn btn-sm btn-outline" onclick="toggleCoupon(${i})"><i class="fas fa-${cp.active?'pause':'play'}"></i></button>
       <button class="btn btn-sm btn-danger" onclick="deleteCoupon(${i})"><i class="fas fa-trash"></i></button>
     </div>
@@ -5020,10 +5097,10 @@ function showLoading(msg){
     el.id='_app_loader';
     el.style.cssText='position:fixed;inset:0;background:var(--bg);z-index:999999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;font-family:Cairo,sans-serif';
     el.innerHTML=`
-      <div style="width:64px;height:64px;background:linear-gradient(135deg,#FF3131,#cc2525);border-radius:18px;display:flex;align-items:center;justify-content:center;font-family:Orbitron,monospace;font-weight:900;font-size:22px;color:#000">X</div>
-      <div style="font-size:16px;font-weight:700;color:#FF3131;font-family:Orbitron,monospace">X GYM</div>
+      <div style="width:64px;height:64px;background:linear-gradient(135deg,#D6474C,#9E3538);border-radius:18px;display:flex;align-items:center;justify-content:center;font-family:Orbitron,monospace;font-weight:900;font-size:22px;color:#fff">X</div>
+      <div style="font-size:16px;font-weight:700;color:#D6474C;font-family:Orbitron,monospace">X GYM</div>
       <div id="_loader_msg" style="font-size:13px;color:#9aa3b8">${msg||'جاري التحميل...'}</div>
-      <div style="width:48px;height:48px;border:3px solid #252b3a;border-top-color:#FF3131;border-radius:50%;animation:spin .8s linear infinite"></div>
+      <div style="width:48px;height:48px;border:3px solid #252b3a;border-top-color:#D6474C;border-radius:50%;animation:spin .8s linear infinite"></div>
       <style>@keyframes spin{to{transform:rotate(360deg)}}</style>`;
     document.body.appendChild(el);
   } else {
@@ -5063,7 +5140,7 @@ updateTime();setInterval(updateTime,1000);
       const loginStatus=document.getElementById('login-sb-status');
       if(loginStatus){
         loginStatus.style.display='block';
-        loginStatus.style.background=pulled?'rgba(46,204,113,0.08)':'rgba(255,49,49,0.08)';
+        loginStatus.style.background=pulled?'rgba(46,204,113,0.08)':'rgba(214,71,76,0.08)';
         loginStatus.style.color=pulled?'var(--green)':'var(--gold)';
         loginStatus.innerHTML=pulled
           ?'<i class="fas fa-cloud" style="margin-left:4px"></i>متصل بـ Supabase ✅ — البيانات محدّثة'
@@ -5072,7 +5149,7 @@ updateTime();setInterval(updateTime,1000);
     }catch(err){
       console.warn('Supabase pull failed:',err);
       const loginStatus=document.getElementById('login-sb-status');
-      if(loginStatus){loginStatus.style.display='block';loginStatus.style.background='rgba(224,60,60,0.08)';loginStatus.style.color='var(--red)';loginStatus.innerHTML='<i class="fas fa-wifi" style="margin-left:4px"></i>تعذّر الاتصال — وضع أوف لاين';}
+      if(loginStatus){loginStatus.style.display='block';loginStatus.style.background='rgba(158,53,56,0.08)';loginStatus.style.color='var(--red)';loginStatus.innerHTML='<i class="fas fa-wifi" style="margin-left:4px"></i>تعذّر الاتصال — وضع أوف لاين';}
     }
   }
 
@@ -5173,7 +5250,7 @@ document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click
     var s = size;
     return '<svg xmlns="http://www.w3.org/2000/svg" width="'+s+'" height="'+s+'" viewBox="0 0 '+s+' '+s+'">'
       + '<defs>'
-      + '<linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ff4d4d"/><stop offset="50%" stop-color="#FF3131"/><stop offset="100%" stop-color="#cc2525"/></linearGradient>'
+      + '<linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#E27A7D"/><stop offset="50%" stop-color="#D6474C"/><stop offset="100%" stop-color="#9E3538"/></linearGradient>'
       + '<linearGradient id="g2" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#06080f"/><stop offset="100%" stop-color="#101525"/></linearGradient>'
       + '</defs>'
       + '<rect width="'+s+'" height="'+s+'" rx="'+(s*0.22)+'" fill="url(#g2)"/>'
@@ -5225,7 +5302,7 @@ document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click
         display: 'standalone',
         orientation: 'portrait-primary',
         background_color: '#06080f',
-        theme_color: '#FF3131',
+        theme_color: '#D6474C',
         lang: 'ar',
         dir: 'rtl',
         icons: [
@@ -5300,8 +5377,8 @@ if('serviceWorker' in navigator){
 
     <!-- Tabs -->
     <div style="display:flex;gap:8px;margin-bottom:18px">
-      <button class="btn btn-sm" id="exp-tab-2" onclick="switchExpTab(2)" style="background:rgba(224,60,60,0.15);color:var(--red);border:1px solid rgba(224,60,60,0.3)">خلال يومين <span id="exp-tab-2-count" style="background:var(--red);color:#fff;border-radius:8px;padding:1px 6px;margin-right:4px;font-size:10px">0</span></button>
-      <button class="btn btn-sm" id="exp-tab-7" onclick="switchExpTab(7)" style="background:rgba(255,49,49,0.1);color:var(--gold);border:1px solid rgba(255,49,49,0.2)">خلال 7 أيام <span id="exp-tab-7-count" style="background:var(--gold);color:#000;border-radius:8px;padding:1px 6px;margin-right:4px;font-size:10px">0</span></button>
+      <button class="btn btn-sm" id="exp-tab-2" onclick="switchExpTab(2)" style="background:rgba(158,53,56,0.15);color:var(--red);border:1px solid rgba(158,53,56,0.3)">خلال يومين <span id="exp-tab-2-count" style="background:var(--red);color:#fff;border-radius:8px;padding:1px 6px;margin-right:4px;font-size:10px">0</span></button>
+      <button class="btn btn-sm" id="exp-tab-7" onclick="switchExpTab(7)" style="background:rgba(214,71,76,0.1);color:var(--gold);border:1px solid rgba(214,71,76,0.2)">خلال 7 أيام <span id="exp-tab-7-count" style="background:var(--gold);color:#fff;border-radius:8px;padding:1px 6px;margin-right:4px;font-size:10px">0</span></button>
       <button class="btn btn-sm" id="exp-tab-0" onclick="switchExpTab(0)" style="background:rgba(74,158,255,0.1);color:var(--blue);border:1px solid rgba(74,158,255,0.2)">منتهية <span id="exp-tab-0-count" style="background:var(--blue);color:#fff;border-radius:8px;padding:1px 6px;margin-right:4px;font-size:10px">0</span></button>
       <button class="btn btn-sm btn-green" onclick="sendBulkWhatsApp()" style="margin-right:auto"><i class="fab fa-whatsapp"></i>إرسال الكل</button>
     </div>
@@ -5418,7 +5495,7 @@ if('serviceWorker' in navigator){
         </div>
         <!-- فلتر متطور -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
-          <div onclick="setBulkFilter('all')" id="bfilter-all" class="bulk-filter-btn active-filter" style="text-align:center;padding:8px;border-radius:10px;cursor:pointer;border:1px solid var(--gold);background:rgba(255,49,49,0.1);font-size:11px;font-weight:700;color:var(--gold)">
+          <div onclick="setBulkFilter('all')" id="bfilter-all" class="bulk-filter-btn active-filter" style="text-align:center;padding:8px;border-radius:10px;cursor:pointer;border:1px solid var(--gold);background:rgba(214,71,76,0.1);font-size:11px;font-weight:700;color:var(--gold)">
             <i class="fas fa-users" style="display:block;font-size:16px;margin-bottom:3px"></i>الكل
           </div>
           <div onclick="setBulkFilter('active')" id="bfilter-active" style="text-align:center;padding:8px;border-radius:10px;cursor:pointer;border:1px solid var(--border);background:var(--bg3);font-size:11px;font-weight:700;color:var(--text2)">
@@ -5432,7 +5509,7 @@ if('serviceWorker' in navigator){
           </div>
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-          <button id="select-all-btn" onclick="toggleSelectAll()" style="background:rgba(255,49,49,0.08);border:1px solid rgba(255,49,49,0.25);border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;color:var(--gold);cursor:pointer;font-family:inherit">
+          <button id="select-all-btn" onclick="toggleSelectAll()" style="background:rgba(214,71,76,0.08);border:1px solid rgba(214,71,76,0.25);border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;color:var(--gold);cursor:pointer;font-family:inherit">
             <i class="fas fa-check-square"></i> تحديد الكل
           </button>
           <span style="font-size:10px;color:var(--text3)">اضغط على العضو لتحديده/إلغائه</span>
@@ -5500,7 +5577,7 @@ if('serviceWorker' in navigator){
         <input type="file" id="import-file" accept=".json" style="display:none" onchange="importJSON(this)">
       </div>
     </div>
-    <div style="background:rgba(224,60,60,0.06);border:1px solid rgba(224,60,60,0.15);border-radius:10px;padding:12px;margin-top:14px;font-size:12px;color:var(--text2)">
+    <div style="background:rgba(158,53,56,0.06);border:1px solid rgba(158,53,56,0.15);border-radius:10px;padding:12px;margin-top:14px;font-size:12px;color:var(--text2)">
       <i class="fas fa-triangle-exclamation" style="color:var(--red);margin-left:6px"></i>الاستيراد سيستبدل البيانات الحالية — تأكد من أخذ نسخة احتياطية أولاً
     </div>
   </div>
@@ -5556,7 +5633,7 @@ if('serviceWorker' in navigator){
   </div>
   <div style="text-align:center;margin-bottom:40px">
     <div style="font-size:14px;color:rgba(255,255,255,0.5);margin-bottom:8px;font-family:'Cairo',sans-serif">X GYM — نظام الحضور</div>
-    <div id="recep-time" style="font-size:72px;font-weight:900;color:#FF3131;letter-spacing:4px;line-height:1">00:00:00</div>
+    <div id="recep-time" style="font-size:72px;font-weight:900;color:#D6474C;letter-spacing:4px;line-height:1">00:00:00</div>
     <div id="recep-date" style="font-size:18px;color:rgba(255,255,255,0.6);margin-top:10px;font-family:'Cairo',sans-serif"></div>
   </div>
   <div style="width:700px;max-width:95vw">
