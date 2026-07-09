@@ -30,9 +30,15 @@
   --card-shadow:0 10px 32px rgba(0,0,0,0.45),0 2px 6px rgba(0,0,0,0.3);
   --gold-glow:0 0 32px rgba(214,71,76,0.12);
   --sidebar-w:256px;
+  --sidebar-w-collapsed:78px;
   --radius:18px;--radius-sm:12px;--radius-xs:8px;
   --transition:all 0.2s cubic-bezier(0.4,0,0.2,1);
+  --transition-slow:all .35s cubic-bezier(.4,0,.2,1);
 }
+@media(prefers-reduced-motion:reduce){
+  *{animation-duration:0.001ms!important;animation-iteration-count:1!important;transition-duration:0.001ms!important;scroll-behavior:auto!important}
+}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px;border-radius:6px}
 body.light-mode{
   --bg:#f5f5f5;--bg2:#ffffff;--bg3:#f0f0f0;--bg4:#e8e8e8;
   --bg5:#efefef;
@@ -68,6 +74,31 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   display:flex;flex-direction:column;transition:.35s cubic-bezier(.4,0,.2,1);
   box-shadow:-6px 0 40px rgba(0,0,0,0.5);
 }
+/* ── Sidebar collapse (desktop icon-rail mode) ── */
+body.sidebar-collapsed .sidebar{width:var(--sidebar-w-collapsed)}
+body.sidebar-collapsed .main{margin-right:var(--sidebar-w-collapsed)}
+body.sidebar-collapsed .logo{padding:22px 0;justify-content:center}
+body.sidebar-collapsed .logo-text,
+body.sidebar-collapsed .logo-sub,
+body.sidebar-collapsed .nav-section,
+body.sidebar-collapsed .nav-item span:not(.nav-badge),
+body.sidebar-collapsed .nav-item .nav-badge,
+body.sidebar-collapsed .sidebar-footer{display:none}
+body.sidebar-collapsed .nav-item{justify-content:center;gap:0;margin:2px 8px}
+body.sidebar-collapsed .nav-item i{width:auto}
+body.sidebar-collapsed #sb-nav-btn span,
+body.sidebar-collapsed [onclick="forceSyncToSupabase()"] span,
+body.sidebar-collapsed [onclick="forceSyncFromSupabase()"] span{display:none}
+body.sidebar-collapsed .nav-item:hover{transform:none}
+.sidebar-collapse-btn{
+  position:absolute;top:26px;left:-13px;width:26px;height:26px;border-radius:50%;
+  background:var(--bg4);border:1px solid var(--border2);color:var(--text2);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
+  font-size:11px;transition:var(--transition);z-index:5;box-shadow:0 2px 10px rgba(0,0,0,0.4);
+}
+.sidebar-collapse-btn:hover{color:var(--gold);border-color:var(--gold2);background:var(--bg5)}
+body.sidebar-collapsed .sidebar-collapse-btn i{transform:rotate(180deg)}
+.main{transition:var(--transition-slow)}
 .sidebar::before{
   content:'';position:absolute;inset:0;
   background:radial-gradient(ellipse at 20% 15%,rgba(214,71,76,0.04) 0%,transparent 60%);
@@ -151,8 +182,12 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   position:sticky;top:0;z-index:50;
   box-shadow:0 1px 20px rgba(0,0,0,0.3);
 }
-.topbar-title{font-size:17px;font-weight:700;color:var(--text);letter-spacing:.3px}
-.topbar-right{display:flex;align-items:center;gap:10px}
+.topbar-title{font-size:17px;font-weight:700;color:var(--text);letter-spacing:.3px;flex-shrink:0}
+.topbar-search{display:flex;align-items:center;gap:10px;background:var(--bg3);border:1px solid var(--border);border-radius:11px;padding:9px 14px;color:var(--text3);font-size:12.5px;cursor:pointer;transition:var(--transition);margin:0 20px;flex:1;max-width:340px}
+.topbar-search:hover{background:var(--bg4);border-color:var(--border2);color:var(--text2)}
+.topbar-search span{flex:1}
+.topbar-search kbd{background:var(--bg4);border:1px solid var(--border2);border-radius:5px;padding:1px 6px;font-size:9.5px;font-family:inherit;color:var(--text3)}
+.topbar-right{display:flex;align-items:center;gap:10px;flex-shrink:0}
 .topbar-btn{
   width:38px;height:38px;border-radius:10px;
   background:var(--bg3);border:1px solid var(--border);
@@ -173,7 +208,8 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .avatar:hover{transform:scale(1.05);box-shadow:0 4px 18px rgba(214,71,76,0.28);}
 
 .content{padding:26px 30px;display:none;position:relative;z-index:1}
-.content.active{display:block}
+.content.active{display:block;animation:contentIn .35s cubic-bezier(.4,0,.2,1) both}
+@keyframes contentIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 
 /* ═══ STAT CARDS ═══ */
 .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
@@ -234,12 +270,26 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .bar-val{font-size:9px;color:var(--text2);font-weight:700}
 
 /* MEMBERS TABLE */
-.table-wrap{overflow-x:auto}
+.table-wrap{overflow-x:auto;overflow-y:auto;max-height:70vh;border-radius:var(--radius-sm)}
 table{width:100%;border-collapse:collapse}
-th{font-size:10.5px;color:var(--text3);text-align:right;padding:11px 14px;border-bottom:1px solid var(--border);font-weight:700;text-transform:uppercase;letter-spacing:.8px}
-td{padding:13px 14px;border-bottom:1px solid rgba(26,34,54,0.5);font-size:13px;color:var(--text)}
+th{font-size:10.5px;color:var(--text3);text-align:right;padding:11px 14px;border-bottom:1px solid var(--border);font-weight:700;text-transform:uppercase;letter-spacing:.8px;
+  position:sticky;top:0;background:var(--bg2);z-index:2;backdrop-filter:blur(6px)}
+td{padding:13px 14px;border-bottom:1px solid rgba(26,34,54,0.5);font-size:13px;color:var(--text);transition:background .15s ease}
 tr:last-child td{border:none}
 tr:hover td{background:rgba(255,255,255,0.025)}
+tbody tr{animation:rowIn .3s ease both}
+@keyframes rowIn{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:translateY(0)}}
+
+/* SKELETON LOADING */
+.skeleton{position:relative;overflow:hidden;background:var(--bg4);border-radius:8px;color:transparent!important}
+.skeleton::after{content:'';position:absolute;inset:0;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,0.06),transparent);
+  animation:skeletonWave 1.4s infinite}
+body.light-mode .skeleton::after{background:linear-gradient(90deg,transparent,rgba(0,0,0,0.05),transparent)}
+@keyframes skeletonWave{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+.skeleton-text{height:12px;border-radius:6px;margin:4px 0}
+.skeleton-row td{padding:13px 14px}
+.skeleton-card{height:90px;border-radius:var(--radius)}
 .tag{display:inline-flex;align-items:center;gap:4px;border-radius:20px;padding:3px 10px;font-size:10.5px;font-weight:700;letter-spacing:.3px}
 .tag.active{background:rgba(34,201,106,0.12);color:var(--green);border:1px solid rgba(34,201,106,0.2)}
 .tag.expired{background:rgba(214,71,76,0.12);color:var(--red);border:1px solid rgba(214,71,76,0.2)}
@@ -248,7 +298,8 @@ tr:hover td{background:rgba(255,255,255,0.025)}
 .member-avatar{width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px}
 
 /* ACTIONS */
-.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;border:none;transition:.2s;font-family:'Cairo',sans-serif}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;border:none;transition:var(--transition);font-family:'Cairo',sans-serif}
+.btn:active{transform:scale(.97)}
 .btn-gold{background:linear-gradient(135deg,var(--gold3),var(--gold),var(--gold2));color:#fff;text-shadow:0 1px 2px rgba(0,0,0,0.25);box-shadow:0 4px 16px rgba(214,71,76,0.25)}
 .btn-gold:hover{opacity:.92;transform:translateY(-2px);box-shadow:0 6px 22px rgba(214,71,76,0.25)}
 .btn-outline{background:transparent;border:1px solid var(--border2);color:var(--text2)}
@@ -297,6 +348,10 @@ tr:hover td{background:rgba(255,255,255,0.025)}
 .trans-item:last-child{border:none}
 @keyframes transIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
 .finance-filter-bar{background:linear-gradient(145deg,var(--bg3),var(--bg2));border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px;display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:12px;position:relative;overflow:hidden}
+.finance-view-tabs{display:flex;gap:6px;background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:4px;margin-bottom:14px;width:fit-content}
+.finance-view-tab{background:transparent;border:none;color:var(--text3);font-family:'Cairo',sans-serif;font-size:12.5px;font-weight:700;padding:8px 18px;border-radius:9px;cursor:pointer;transition:var(--transition);display:flex;align-items:center;gap:7px}
+.finance-view-tab:hover{color:var(--text2)}
+.finance-view-tab.active{background:linear-gradient(135deg,var(--gold3),var(--gold),var(--gold2));color:#fff;box-shadow:0 3px 12px rgba(214,71,76,0.3)}
 .finance-filter-bar::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--gold2),transparent)}
 .week-nav{display:flex;align-items:center;gap:8px}
 .week-nav-btn{width:34px;height:34px;flex:none;border-radius:10px;background:var(--bg4);border:1px solid var(--border2);color:var(--text2);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:var(--transition);font-size:13px}
@@ -318,9 +373,11 @@ tr:hover td{background:rgba(255,255,255,0.025)}
 .trans-amount.expense{color:var(--red);font-weight:700}
 
 /* MODAL */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:999;display:none;align-items:center;justify-content:center;backdrop-filter:blur(8px)}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:999;display:none;align-items:center;justify-content:center;backdrop-filter:blur(8px);animation:overlayIn .2s ease both}
 .modal-overlay.open{display:flex}
-.modal{background:linear-gradient(145deg,var(--bg2),var(--bg));border:1px solid var(--border2);border-radius:22px;padding:30px;width:500px;max-height:90vh;overflow-y:auto;position:relative;box-shadow:0 24px 80px rgba(0,0,0,0.7),0 4px 24px rgba(0,0,0,0.5)}
+@keyframes overlayIn{from{opacity:0}to{opacity:1}}
+@keyframes modalIn{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+.modal{background:linear-gradient(145deg,var(--bg2),var(--bg));border:1px solid var(--border2);border-radius:22px;padding:30px;width:500px;max-height:90vh;overflow-y:auto;position:relative;box-shadow:0 24px 80px rgba(0,0,0,0.7),0 4px 24px rgba(0,0,0,0.5);animation:modalIn .28s cubic-bezier(.4,0,.2,1) both}
 .modal h3{font-size:18px;font-weight:700;margin-bottom:6px}
 .modal-sub{color:var(--text2);font-size:13px;margin-bottom:24px}
 .form-group{margin-bottom:16px}
@@ -500,6 +557,27 @@ body.role-receptionist .recep-hide{display:none!important}
 .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:99;backdrop-filter:blur(2px)}
 .sidebar-overlay.open{display:block}
 
+/* ===== ATTENDANCE PAGE ===== */
+.att-stats-bar{margin-bottom:20px}
+.att-stat-card{display:flex;align-items:center;gap:16px;background:linear-gradient(135deg,rgba(39,199,112,0.12),rgba(39,199,112,0.03));border:1px solid rgba(39,199,112,0.22);border-radius:16px;padding:18px 22px;max-width:340px;transition:var(--transition)}
+.att-stat-card:hover{border-color:rgba(39,199,112,0.4);transform:translateY(-2px)}
+.att-stat-icon{width:54px;height:54px;border-radius:14px;background:rgba(39,199,112,0.15);color:var(--green);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.att-stat-val{font-size:30px;font-weight:900;color:var(--green);line-height:1}
+.att-stat-label{font-size:12px;color:var(--text3);margin-top:5px;font-weight:600}
+.attendance-layout{display:grid;grid-template-columns:400px 1fr;gap:20px;align-items:start}
+.att-mode-tabs{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-bottom:14px;background:var(--bg3);border:1px solid var(--border);border-radius:14px;padding:5px}
+.att-mode-tab{border:none;border-radius:10px;padding:10px 4px;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;background:transparent;color:var(--text3);font-family:'Cairo',sans-serif}
+.att-mode-tab.active{background:var(--gold);color:#fff}
+.att-mode-tab i{display:block;font-size:17px;margin-bottom:4px}
+@media(max-width:1024px){
+  .attendance-layout{grid-template-columns:1fr}
+}
+@media(max-width:768px){
+  .att-stat-card{max-width:100%;padding:16px}
+  .att-stat-icon{width:46px;height:46px;font-size:19px}
+  .att-stat-val{font-size:25px}
+}
+
 /* ===== RESPONSIVE ===== */
 
 /* Tablet 768-1024px */
@@ -530,6 +608,9 @@ body.role-receptionist .recep-hide{display:none!important}
   }
   .main{margin-right:0;padding:0}
   .mob-menu-btn{display:flex}
+  .sidebar-collapse-btn{display:none}
+  body.sidebar-collapsed .main{margin-right:0}
+  .topbar-search{display:none}
   .topbar{padding:0 12px;height:56px}
   .topbar-title{font-size:14px}
   .topbar-btn{width:36px;height:36px;font-size:14px}
@@ -744,6 +825,7 @@ body.role-receptionist .recep-hide{display:none!important}
 
 <!-- SIDEBAR -->
 <div class="sidebar">
+  <div class="sidebar-collapse-btn" id="sidebar-collapse-btn" onclick="toggleSidebarCollapse()" title="طي/فتح القائمة الجانبية"><i class="fas fa-angles-left"></i></div>
   <div class="logo">
     <div class="logo-icon">X</div>
     <div>
@@ -791,6 +873,9 @@ body.role-receptionist .recep-hide{display:none!important}
 <div class="main">
   <div class="topbar">
     <div class="topbar-title" id="page-title">لوحة التحكم</div>
+    <div class="topbar-search" onclick="openGlobalSearch()" title="بحث سريع (Ctrl+K)">
+      <i class="fas fa-search"></i><span>ابحث عن عضو...</span><kbd>Ctrl K</kbd>
+    </div>
     <div class="topbar-right">
       <div class="topbar-date"><i class="fas fa-calendar-alt"></i><span id="date-display"></span></div>
       <span id="save-indicator" style="font-size:11px;font-weight:700;min-width:60px;text-align:center"></span>
@@ -879,84 +964,29 @@ body.role-receptionist .recep-hide{display:none!important}
       </div>
     </div>
 
-    <!-- إحصاء اليوم — شريط علوي -->
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
-      <div style="background:linear-gradient(135deg,rgba(39,199,112,0.12),rgba(39,199,112,0.04));border:1px solid rgba(39,199,112,0.2);border-radius:14px;padding:16px;text-align:center">
-        <div style="font-size:28px;font-weight:900;color:var(--green);line-height:1" id="att-today-in">0</div>
-        <div style="font-size:11px;color:var(--text3);margin-top:4px;font-weight:600">دخول اليوم</div>
-      </div>
-      <div style="background:linear-gradient(135deg,rgba(158,53,56,0.12),rgba(158,53,56,0.04));border:1px solid rgba(158,53,56,0.2);border-radius:14px;padding:16px;text-align:center">
-        <div style="font-size:28px;font-weight:900;color:var(--red);line-height:1" id="att-today-out">0</div>
-        <div style="font-size:11px;color:var(--text3);margin-top:4px;font-weight:600">خروج اليوم</div>
-      </div>
-      <div style="background:linear-gradient(135deg,rgba(74,158,255,0.12),rgba(74,158,255,0.04));border:1px solid rgba(74,158,255,0.2);border-radius:14px;padding:16px;text-align:center">
-        <div style="font-size:28px;font-weight:900;color:var(--blue);line-height:1" id="att-today-now">0</div>
-        <div style="font-size:11px;color:var(--text3);margin-top:4px;font-weight:600">داخل الآن</div>
-      </div>
-      <div style="background:linear-gradient(135deg,rgba(214,71,76,0.12),rgba(214,71,76,0.04));border:1px solid rgba(214,71,76,0.2);border-radius:14px;padding:16px;text-align:center">
-        <div style="font-size:28px;font-weight:900;color:var(--gold);line-height:1" id="att-unique-today">0</div>
-        <div style="font-size:11px;color:var(--text3);margin-top:4px;font-weight:600">عضو حاضر</div>
+    <!-- إحصاء اليوم -->
+    <div class="att-stats-bar">
+      <div class="att-stat-card">
+        <div class="att-stat-icon"><i class="fas fa-user-check"></i></div>
+        <div>
+          <div class="att-stat-val" id="att-today-in">0</div>
+          <div class="att-stat-label">عضو حضر اليوم</div>
+        </div>
       </div>
     </div>
 
-    <div style="display:grid;grid-template-columns:400px 1fr;gap:20px;align-items:start">
+    <div class="attendance-layout">
 
       <!-- عمود التسجيل -->
       <div>
         <!-- تبويبات الوضع -->
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:14px;background:var(--bg3);border:1px solid var(--border);border-radius:14px;padding:5px">
-          <button id="mode-tab-camera" onclick="setAttMode('camera')"
-            style="border:none;border-radius:10px;padding:9px 4px;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;background:var(--gold);color:#fff;font-family:'Cairo',sans-serif">
-            <i class="fas fa-camera" style="display:block;font-size:16px;margin-bottom:3px"></i>كاميرا
+        <div class="att-mode-tabs">
+          <button id="mode-tab-reader" class="att-mode-tab active" onclick="setAttMode('reader')">
+            <i class="fas fa-barcode"></i>قارئ USB
           </button>
-          <button id="mode-tab-reader" onclick="setAttMode('reader')"
-            style="border:none;border-radius:10px;padding:9px 4px;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;background:transparent;color:var(--text3);font-family:'Cairo',sans-serif">
-            <i class="fas fa-barcode" style="display:block;font-size:16px;margin-bottom:3px"></i>قارئ USB
+          <button id="mode-tab-manual" class="att-mode-tab" onclick="setAttMode('manual')">
+            <i class="fas fa-keyboard"></i>يدوي
           </button>
-          <button id="mode-tab-manual" onclick="setAttMode('manual')"
-            style="border:none;border-radius:10px;padding:9px 4px;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;background:transparent;color:var(--text3);font-family:'Cairo',sans-serif">
-            <i class="fas fa-keyboard" style="display:block;font-size:16px;margin-bottom:3px"></i>يدوي
-          </button>
-        </div>
-
-        <!-- CAMERA MODE -->
-        <div id="att-mode-camera">
-          <div style="position:relative;border-radius:16px;overflow:hidden;background:#000;margin-bottom:10px;border:2px solid var(--border2);box-shadow:0 0 30px rgba(0,0,0,0.5)" id="camera-container">
-            <video id="att-camera-video" style="width:100%;display:block;min-height:280px;object-fit:cover" autoplay playsinline muted></video>
-            <div style="position:absolute;top:8px;right:8px;left:8px;display:flex;gap:6px;z-index:5">
-              <select id="camera-select" class="form-select" style="flex:1;font-size:11px;padding:4px 8px;background:rgba(0,0,0,0.75);border-color:rgba(255,255,255,0.15);color:#fff;backdrop-filter:blur(6px)" onchange="switchCamera(this.value)"></select>
-              <button class="btn btn-sm" style="background:rgba(0,0,0,0.6);color:#fff;border:1px solid rgba(255,255,255,0.2);padding:4px 10px;backdrop-filter:blur(6px)" onclick="flipCamera()"><i class="fas fa-rotate"></i></button>
-              <button class="btn btn-sm" style="background:rgba(158,53,56,0.7);color:#fff;border:none;padding:4px 10px" onclick="stopAttCamera()"><i class="fas fa-stop"></i></button>
-            </div>
-            <div id="cam-scan-overlay" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:4">
-              <div style="width:260px;height:90px;position:relative">
-                <div style="position:absolute;top:0;right:0;width:26px;height:26px;border-top:3px solid var(--gold);border-right:3px solid var(--gold);border-radius:0 6px 0 0;box-shadow:0 0 10px rgba(214,71,76,0.45)"></div>
-                <div style="position:absolute;top:0;left:0;width:26px;height:26px;border-top:3px solid var(--gold);border-left:3px solid var(--gold);border-radius:6px 0 0 0;box-shadow:0 0 10px rgba(214,71,76,0.45)"></div>
-                <div style="position:absolute;bottom:0;right:0;width:26px;height:26px;border-bottom:3px solid var(--gold);border-right:3px solid var(--gold);border-radius:0 0 6px 0;box-shadow:0 0 10px rgba(214,71,76,0.45)"></div>
-                <div style="position:absolute;bottom:0;left:0;width:26px;height:26px;border-bottom:3px solid var(--gold);border-left:3px solid var(--gold);border-radius:0 0 0 6px;box-shadow:0 0 10px rgba(214,71,76,0.45)"></div>
-                <div class="scanner-line" style="background:linear-gradient(90deg,transparent,rgba(214,71,76,0.6),transparent);height:2px;box-shadow:0 0 12px rgba(214,71,76,0.55)"></div>
-                <div style="position:absolute;inset:0;box-shadow:0 0 0 9999px rgba(0,0,0,0.45)"></div>
-              </div>
-            </div>
-            <!-- فلاش نتيجة المسح -->
-            <div id="cam-flash-result" style="position:absolute;bottom:0;left:0;right:0;padding:14px 16px;display:none;z-index:6;animation:slideUp .25s ease">
-              <div id="cam-flash-name" style="font-size:17px;font-weight:900;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,0.8)"></div>
-              <div id="cam-flash-info" style="font-size:12px;color:rgba(255,255,255,0.8)"></div>
-            </div>
-            <!-- overlay تشغيل -->
-            <div id="cam-status-overlay" style="position:absolute;inset:0;background:rgba(0,0,0,0.88);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;z-index:10">
-              <div style="width:68px;height:68px;border-radius:20px;background:linear-gradient(135deg,rgba(214,71,76,0.2),rgba(214,71,76,0.05));border:2px solid rgba(214,71,76,0.25);display:flex;align-items:center;justify-content:center">
-                <i class="fas fa-camera" style="font-size:30px;color:var(--gold);opacity:.85"></i>
-              </div>
-              <div style="text-align:center">
-                <div style="font-size:15px;font-weight:800;color:#fff;margin-bottom:5px">قراءة الباركود بالكاميرا</div>
-                <div style="font-size:12px;color:rgba(255,255,255,0.45)">وجّه الكارنيه داخل الإطار الذهبي</div>
-              </div>
-              <button class="btn btn-gold" onclick="startAttCamera()" style="font-size:13px;padding:11px 28px"><i class="fas fa-play"></i>تشغيل الكاميرا</button>
-            </div>
-          </div>
-          <div id="cam-msg" style="text-align:center;font-size:12px;color:var(--text3);min-height:20px;padding:4px 0 8px;transition:all .3s"></div>
-          <button class="btn btn-outline btn-sm" style="width:100%;justify-content:center" onclick="startAttCamera()"><i class="fas fa-rotate"></i>إعادة تشغيل الكاميرا</button>
         </div>
 
         <!-- BARCODE READER MODE -->
@@ -1094,12 +1124,17 @@ body.role-receptionist .recep-hide{display:none!important}
       </div>
     </div>
     <div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">
-      <div class="stat-card green"><div class="stat-icon"><i class="fas fa-arrow-trend-up"></i></div><div class="stat-val" id="total-income">0</div><div class="stat-label">دخل الأسبوع (جنيه)</div></div>
-      <div class="stat-card red"><div class="stat-icon"><i class="fas fa-arrow-trend-down"></i></div><div class="stat-val" id="total-expense">0</div><div class="stat-label">مصروفات الأسبوع (جنيه)</div></div>
-      <div class="stat-card gold"><div class="stat-icon"><i class="fas fa-scale-balanced"></i></div><div class="stat-val" id="net-profit">0</div><div class="stat-label">صافي الأسبوع (جنيه)</div></div>
+      <div class="stat-card green"><div class="stat-icon"><i class="fas fa-arrow-trend-up"></i></div><div class="stat-val" id="total-income">0</div><div class="stat-label"><span id="income-label-period">دخل الأسبوع</span> (جنيه)</div></div>
+      <div class="stat-card red"><div class="stat-icon"><i class="fas fa-arrow-trend-down"></i></div><div class="stat-val" id="total-expense">0</div><div class="stat-label"><span id="expense-label-period">مصروفات الأسبوع</span> (جنيه)</div></div>
+      <div class="stat-card gold"><div class="stat-icon"><i class="fas fa-scale-balanced"></i></div><div class="stat-val" id="net-profit">0</div><div class="stat-label"><span id="net-label-period">صافي الأسبوع</span> (جنيه)</div></div>
     </div>
 
-    <div class="finance-filter-bar">
+    <div class="finance-view-tabs">
+      <button class="finance-view-tab active" id="finance-tab-week" onclick="setFinanceViewMode('week')"><i class="fas fa-calendar-week"></i> أسبوعي</button>
+      <button class="finance-view-tab" id="finance-tab-day" onclick="setFinanceViewMode('day')"><i class="fas fa-calendar-day"></i> يومي</button>
+    </div>
+
+    <div class="finance-filter-bar" id="finance-week-bar">
       <div class="week-nav">
         <button class="week-nav-btn" id="week-prev-btn" onclick="changeFinanceWeek(-1)" title="الأسبوع السابق"><i class="fas fa-chevron-right"></i></button>
         <div class="week-label-wrap">
@@ -1109,6 +1144,18 @@ body.role-receptionist .recep-hide{display:none!important}
         <button class="week-nav-btn" id="week-next-btn" onclick="changeFinanceWeek(1)" title="الأسبوع التالي"><i class="fas fa-chevron-left"></i></button>
       </div>
       <button class="week-today-btn" id="week-today-btn" onclick="resetFinanceWeek()"><i class="fas fa-calendar-day" style="margin-left:5px"></i>الأسبوع الحالي</button>
+    </div>
+
+    <div class="finance-filter-bar" id="finance-day-bar" style="display:none">
+      <div class="week-nav">
+        <button class="week-nav-btn" onclick="changeFinanceDay(-1)" title="اليوم السابق"><i class="fas fa-chevron-right"></i></button>
+        <div class="week-label-wrap">
+          <input type="date" class="form-input" id="finance-day-picker" style="width:170px;text-align:center;padding:8px 10px" onchange="onFinanceDayPick(this.value)">
+          <div class="week-sub"><span class="dot"></span><span id="finance-day-sub">—</span></div>
+        </div>
+        <button class="week-nav-btn" onclick="changeFinanceDay(1)" title="اليوم التالي"><i class="fas fa-chevron-left"></i></button>
+      </div>
+      <button class="week-today-btn" id="finance-day-today-btn" onclick="resetFinanceDay()"><i class="fas fa-calendar-day" style="margin-left:5px"></i>اليوم الحالي</button>
     </div>
 
     <div class="finance-row">
@@ -2336,8 +2383,7 @@ function showPage(p){
   items.forEach(i=>{if(i.textContent.includes((titles[p]||'').slice(0,4)))i.classList.add('active')});
   if(p==='dashboard')renderDashboard();
   if(p==='members')renderMembers();
-  if(p==='attendance'){renderAttendance();setAttMode('camera');}
-  else stopAttCamera();
+  if(p==='attendance'){renderAttendance();setAttMode('reader');}
   if(p==='finance')renderFinance();
   if(p==='reports')renderReports();
   if(p==='subscriptions')renderSubscriptions();
@@ -2672,15 +2718,9 @@ function renderAttendance(){
   renderAttendanceLog();
   const todayStr=new Date().toDateString();
   const todayRecs=attendance.filter(a=>new Date(a.time).toDateString()===todayStr);
-  const inCount=todayRecs.filter(a=>a.type==='in').length;
-  const outCount=todayRecs.filter(a=>a.type==='out').length;
   const uniqueToday=new Set(todayRecs.filter(a=>a.type==='in').map(a=>a.id)).size;
-  document.getElementById('att-today-in').textContent=inCount;
-  document.getElementById('att-today-out').textContent=outCount;
-  document.getElementById('att-today-now').textContent=Math.max(0,inCount-outCount);
-  const uniqEl=document.getElementById('att-unique-today');
-  if(uniqEl)uniqEl.textContent=uniqueToday;
-  document.getElementById('att-count-badge').textContent=inCount+' حضور اليوم';
+  document.getElementById('att-today-in').textContent=uniqueToday;
+  document.getElementById('att-count-badge').textContent=uniqueToday+' حضور اليوم';
 }
 
 // ===== تحديث يومي شامل (عداد الحضور + أيام الاشتراك + التنبيهات) =====
@@ -2791,6 +2831,8 @@ function renderAttendanceLog(){
 }
 
 let financeWeekOffset=0;
+let financeViewMode='week'; // 'week' | 'day'
+let financeSelectedDate=dstr(new Date());
 function getFinanceWeekRange(offset){
   const now=new Date();
   const day=now.getDay(); // 0=Sun...6=Sat
@@ -2807,7 +2849,87 @@ function changeFinanceWeek(delta){
 }
 function resetFinanceWeek(){financeWeekOffset=0;renderFinance();}
 
+// ===== DAILY VIEW (يومي) — إضافة جديدة لا تغيّر منطق الأسبوعي =====
+function setFinanceViewMode(mode){
+  financeViewMode=mode;
+  const weekTab=document.getElementById('finance-tab-week');
+  const dayTab=document.getElementById('finance-tab-day');
+  const weekBar=document.getElementById('finance-week-bar');
+  const dayBar=document.getElementById('finance-day-bar');
+  const incLabel=document.getElementById('income-label-period');
+  const expLabel=document.getElementById('expense-label-period');
+  const netLabel=document.getElementById('net-label-period');
+  if(mode==='day'){
+    weekTab.classList.remove('active');dayTab.classList.add('active');
+    weekBar.style.display='none';dayBar.style.display='flex';
+    incLabel.textContent='دخل اليوم';expLabel.textContent='مصروفات اليوم';netLabel.textContent='صافي اليوم';
+    const picker=document.getElementById('finance-day-picker');
+    if(picker)picker.value=financeSelectedDate;
+  } else {
+    dayTab.classList.remove('active');weekTab.classList.add('active');
+    dayBar.style.display='none';weekBar.style.display='flex';
+    incLabel.textContent='دخل الأسبوع';expLabel.textContent='مصروفات الأسبوع';netLabel.textContent='صافي الأسبوع';
+  }
+  renderFinance();
+}
+function changeFinanceDay(delta){
+  const d=new Date(financeSelectedDate);
+  d.setDate(d.getDate()+delta);
+  financeSelectedDate=dstr(d);
+  const picker=document.getElementById('finance-day-picker');
+  if(picker)picker.value=financeSelectedDate;
+  renderFinance();
+}
+function onFinanceDayPick(val){
+  if(!val)return;
+  financeSelectedDate=val;
+  renderFinance();
+}
+function resetFinanceDay(){
+  financeSelectedDate=dstr(new Date());
+  const picker=document.getElementById('finance-day-picker');
+  if(picker)picker.value=financeSelectedDate;
+  renderFinance();
+}
+function renderFinanceDaily(){
+  const dateStr=financeSelectedDate;
+  const dayIncome=transactions.income.filter(t=>t.date===dateStr).sort((a,b)=>b.date.localeCompare(a.date));
+  const dayExpense=transactions.expense.filter(t=>t.date===dateStr).sort((a,b)=>b.date.localeCompare(a.date));
+
+  const totalInc=dayIncome.reduce((s,t)=>s+t.amount,0);
+  const totalExp=dayExpense.reduce((s,t)=>s+t.amount,0);
+  const net=totalInc-totalExp;
+  document.getElementById('total-income').textContent=totalInc.toLocaleString('ar-EG');
+  document.getElementById('total-expense').textContent=totalExp.toLocaleString('ar-EG');
+  document.getElementById('net-profit').textContent=net.toLocaleString('ar-EG');
+  document.getElementById('income-count').textContent=dayIncome.length+' عملية';
+  document.getElementById('expense-count').textContent=dayExpense.length+' عملية';
+
+  const dObj=new Date(dateStr);
+  const isToday=dateStr===dstr(new Date());
+  const daySub=document.getElementById('finance-day-sub');
+  if(daySub)daySub.textContent=isToday?'اليوم الحالي':dObj.toLocaleDateString('ar-EG',{weekday:'long',day:'numeric',month:'long'});
+  const todayBtn=document.getElementById('finance-day-today-btn');
+  if(todayBtn)todayBtn.disabled=isToday;
+
+  const incIcons={اشتراك:'fa-id-card','بيع':'fa-shopping-bag',تدريب:'fa-dumbbell',أخرى:'fa-circle-dollar'};
+  const expIcons={إيجار:'fa-building',كهرباء:'fa-bolt',مياه:'fa-droplet',رواتب:'fa-users',صيانة:'fa-wrench',منظفات:'fa-spray-can',تسويق:'fa-bullhorn',أخرى:'fa-receipt'};
+
+  document.getElementById('income-list').innerHTML=dayIncome.length?dayIncome.map((t,i)=>`<div class="trans-item" style="animation-delay:${i*.03}s">
+    <div class="trans-icon" style="background:rgba(46,204,113,0.1);color:var(--green)"><i class="fas ${Object.keys(incIcons).find(k=>t.type.includes(k))?incIcons[Object.keys(incIcons).find(k=>t.type.includes(k))]:'fa-coins'}"></i></div>
+    <div style="flex:1;padding:0 10px"><div style="font-size:13px;font-weight:700">${t.type}</div><div style="font-size:11px;color:var(--text3)">${t.date} ${t.note?'• '+t.note:''}</div></div>
+    <div class="trans-amount income">+${t.amount.toLocaleString()} ج</div>
+  </div>`).join(''):`<div class="trans-empty"><i class="fas fa-inbox"></i>لا يوجد دخل مسجل في هذا اليوم</div>`;
+
+  document.getElementById('expense-list').innerHTML=dayExpense.length?dayExpense.map((t,i)=>`<div class="trans-item" style="animation-delay:${i*.03}s">
+    <div class="trans-icon" style="background:rgba(158,53,56,0.1);color:var(--red)"><i class="fas ${Object.keys(expIcons).find(k=>t.type.includes(k))?expIcons[Object.keys(expIcons).find(k=>t.type.includes(k))]:'fa-receipt'}"></i></div>
+    <div style="flex:1;padding:0 10px"><div style="font-size:13px;font-weight:700">${t.type}</div><div style="font-size:11px;color:var(--text3)">${t.date} ${t.note?'• '+t.note:''}</div></div>
+    <div class="trans-amount expense">-${t.amount.toLocaleString()} ج</div>
+  </div>`).join(''):`<div class="trans-empty"><i class="fas fa-inbox"></i>لا يوجد مصروفات مسجلة في هذا اليوم</div>`;
+}
+
 function renderFinance(){
+  if(financeViewMode==='day'){renderFinanceDaily();return;}
   const {start,end}=getFinanceWeekRange(financeWeekOffset);
   const startStr=dstr(start),endStr=dstr(end);
   const fmtShort=d=>d.toLocaleDateString('ar-EG',{day:'numeric',month:'short'});
@@ -3306,7 +3428,12 @@ function openRenewModal(id){
   if(!m)return;
   document.getElementById('renew-member-id').value=id;
   document.getElementById('renew-member-name').textContent='تجديد اشتراك: '+m.name;
-  document.getElementById('renew-start-date').value=new Date().toISOString().split('T')[0];
+  // إذا كان الاشتراك لا يزال ساريًا، تبدأ مدة التجديد من تاريخ انتهاء الاشتراك الحالي وليس من اليوم
+  const todayRM=new Date();todayRM.setHours(0,0,0,0);
+  const memberEndRM=m.end?new Date(m.end):null;
+  if(memberEndRM)memberEndRM.setHours(0,0,0,0);
+  const isStillActiveRM=memberEndRM&&memberEndRM>=todayRM;
+  document.getElementById('renew-start-date').value=isStillActiveRM?m.end:new Date().toISOString().split('T')[0];
   // Build sub type select
   const sel=document.getElementById('renew-sub-type');
   sel.innerHTML=Object.entries(priceNames).map(([k,v])=>`<option value="${k}" ${k===m.type?'selected':''}>${v} — ${(prices[k]||0).toLocaleString()} جنيه</option>`).join('');
@@ -3317,6 +3444,8 @@ function openRenewModal(id){
 }
 
 function updateRenewSummary(){
+  const renewId=document.getElementById('renew-member-id').value;
+  const renewMember=members.find(x=>x.id===renewId);
   const type=document.getElementById('renew-sub-type').value;
   const start=document.getElementById('renew-start-date').value;
   const discTypeEl=document.getElementById('renew-discount-type');
@@ -3330,6 +3459,12 @@ function updateRenewSummary(){
   const endDate=new Date(start);
   endDate.setDate(endDate.getDate()+dur);
   
+  const todayRS=new Date();todayRS.setHours(0,0,0,0);
+  const memberEndRS=renewMember&&renewMember.end?new Date(renewMember.end):null;
+  if(memberEndRS)memberEndRS.setHours(0,0,0,0);
+  const isStillActiveRS=memberEndRS&&memberEndRS>=todayRS;
+  const extendNote=isStillActiveRS?`<div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="color:var(--blue)">ملاحظة:</span><strong style="color:var(--blue)">امتداد فوق الاشتراك الحالي الساري</strong></div>`:'';
+  
   const originalPrice=prices[type]||0;
   const discType=discTypeEl?.value||'none';
   const discVal=parseFloat(discValEl?.value)||0;
@@ -3339,6 +3474,7 @@ function updateRenewSummary(){
   const finalPrice=Math.max(0,originalPrice-discAmount);
   
   document.getElementById('renew-summary').innerHTML=`
+    ${extendNote}
     <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span>الباقة:</span><strong>${priceNames[type]||type}</strong></div>
     <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span>المدة:</span><strong>${dur} يوم</strong></div>
     <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span>ينتهي في:</span><strong>${endDate.toISOString().split('T')[0]}</strong></div>
@@ -3373,7 +3509,10 @@ function confirmRenew(){
   m.type=type;
   m.start=startDate.toISOString().split('T')[0];
   m.end=endDate.toISOString().split('T')[0];
-  m.days=dur;
+  // احتساب الأيام المتبقية الفعلية من تاريخ اليوم إلى تاريخ الانتهاء الجديد
+  const todayCR=new Date();todayCR.setHours(0,0,0,0);
+  const endDateCR=new Date(endDate);endDateCR.setHours(0,0,0,0);
+  m.days=Math.max(0,Math.ceil((endDateCR-todayCR)/(1000*60*60*24)));
   m.status='active';
   
   const incNote=m.name+(discAmount>0?' (خصم '+discAmount.toLocaleString()+' ج)':'');
@@ -3561,6 +3700,18 @@ function initTheme(){
 
 // Initialize theme on page load
 initTheme();
+
+// ===== SIDEBAR COLLAPSE (desktop icon-rail mode) =====
+function toggleSidebarCollapse(){
+  const collapsed = document.body.classList.toggle('sidebar-collapsed');
+  localStorage.setItem('xgym_sidebar_collapsed', collapsed ? '1' : '0');
+}
+function initSidebarCollapse(){
+  if(localStorage.getItem('xgym_sidebar_collapsed') === '1'){
+    document.body.classList.add('sidebar-collapsed');
+  }
+}
+initSidebarCollapse();
 
 function toggleFullscreen(){
   const el=document.documentElement;
@@ -3858,32 +4009,20 @@ function printBarcode(){
   });
 }
 
-// ===== نظام الكاميرا والحضور المتكامل =====
-let _attMode='camera';
-let _camStream=null;
-let _camReader=null;
-let _camDevices=[];
-let _camIdx=0;
-let _camActive=false;
+// ===== نظام الحضور بالباركود (قارئ USB / إدخال يدوي) =====
+let _attMode='reader';
 let _manualSearchTimeout=null;
 
 let _barcodeKeepFocusInterval=null;
 
 function setAttMode(mode){
   _attMode=mode;
-  ['camera','reader','manual'].forEach(m=>{
+  ['reader','manual'].forEach(m=>{
     const el=document.getElementById('att-mode-'+m);
     if(el)el.style.display=m===mode?'':'none';
     const tab=document.getElementById('mode-tab-'+m);
-    if(tab){
-      if(m===mode){
-        tab.style.background='var(--gold)';tab.style.color='#000';
-      }else{
-        tab.style.background='transparent';tab.style.color='var(--text3)';
-      }
-    }
+    if(tab)tab.classList.toggle('active',m===mode);
   });
-  if(mode!=='camera')stopAttCamera();
 
   if(_barcodeKeepFocusInterval){clearInterval(_barcodeKeepFocusInterval);_barcodeKeepFocusInterval=null;}
 
@@ -3908,56 +4047,63 @@ function setAttMode(mode){
   }
 }
 
-async function startAttCamera(){
-  if(_camActive)return;
-  const overlay=document.getElementById('cam-status-overlay');
-  const msg=document.getElementById('cam-msg');
-  if(overlay)overlay.style.display='none';
-  if(msg)msg.textContent='جاري تشغيل الكاميرا...';
+// ===== قراءة باركود خام (Raw Input) بغض النظر عن لغة لوحة المفاتيح =====
+// المشكلة: إذا كانت لغة نظام التشغيل عربي، فإن ضغطات قارئ الباركود (اللي بيتصرف كلوحة مفاتيح)
+// بيتم ترجمتها لحروف عربية بدل الإنجليزية الأصلية. الحل: نعتمد على event.code (المفتاح الفعلي
+// المستقل عن اللغة) بدل الاعتماد على الحرف الناتج من نظام التشغيل.
+let _barcodeRawBuffer='';
 
-  try{
-    // جلب قائمة الكاميرات المتاحة
-    const devices=await navigator.mediaDevices.enumerateDevices();
-    _camDevices=devices.filter(d=>d.kind==='videoinput');
-    const sel=document.getElementById('camera-select');
-    if(sel){
-      sel.innerHTML=_camDevices.map((d,i)=>`<option value="${i}">${d.label||'كاميرا '+(i+1)}</option>`).join('');
-      sel.value=_camIdx;
-    }
-    await _startCamStream(_camIdx);
-  }catch(e){
-    if(overlay){overlay.style.display='flex';}
-    if(msg)msg.textContent='';
-    showNotif('لم يتم السماح بالكاميرا: '+e.message,'warning');
+function _barcodeCodeToChar(e){
+  const code=e.code;
+  const shift=e.shiftKey;
+  const digitMap={Digit0:'0',Digit1:'1',Digit2:'2',Digit3:'3',Digit4:'4',Digit5:'5',Digit6:'6',Digit7:'7',Digit8:'8',Digit9:'9'};
+  const digitShiftMap={Digit0:')',Digit1:'!',Digit2:'@',Digit3:'#',Digit4:'$',Digit5:'%',Digit6:'^',Digit7:'&',Digit8:'*',Digit9:'('};
+  if(digitMap[code])return shift?digitShiftMap[code]:digitMap[code];
+  const numpadMap={Numpad0:'0',Numpad1:'1',Numpad2:'2',Numpad3:'3',Numpad4:'4',Numpad5:'5',Numpad6:'6',Numpad7:'7',Numpad8:'8',Numpad9:'9',NumpadMultiply:'*',NumpadAdd:'+',NumpadSubtract:'-',NumpadDecimal:'.',NumpadDivide:'/'};
+  if(numpadMap[code])return numpadMap[code];
+  if(/^Key[A-Z]$/.test(code)){
+    const letter=code.slice(3);
+    return shift?letter:letter.toLowerCase();
   }
+  const symbolMap={Minus:'-',Equal:'=',BracketLeft:'[',BracketRight:']',Semicolon:';',Quote:"'",Backslash:'\\',Comma:',',Period:'.',Slash:'/',Backquote:'`',Space:' '};
+  const symbolShiftMap={Minus:'_',Equal:'+',BracketLeft:'{',BracketRight:'}',Semicolon:':',Quote:'"',Backslash:'|',Comma:'<',Period:'>',Slash:'?',Backquote:'~',Space:' '};
+  if(symbolMap[code])return shift?symbolShiftMap[code]:symbolMap[code];
+  return null;
 }
 
-async function _startCamStream(idx){
-  stopAttCamera(false);
-  const video=document.getElementById('att-camera-video');
-  const msg=document.getElementById('cam-msg');
-  try{
-    const deviceId=_camDevices[idx]?.deviceId;
-    const constraints={video:deviceId?{deviceId:{exact:deviceId},width:{ideal:1280},height:{ideal:720}}:{facingMode:'environment',width:{ideal:1280}}};
-    _camStream=await navigator.mediaDevices.getUserMedia(constraints);
-    video.srcObject=_camStream;
-    await video.play();
-    _camActive=true;
-    if(msg)msg.innerHTML='<span style="color:var(--green)"><i class="fas fa-circle" style="animation:pulse 1s infinite"></i> الكاميرا تعمل — وجّه الباركود داخل الإطار</span>';
+function resetBarcodeRawBuffer(){_barcodeRawBuffer='';}
 
-    // ===== محرك القراءة: BarcodeDetector أولاً، ثم Quagga =====
-    if('BarcodeDetector' in window){
-      _startBarcodeDetector(video);
-    }else if(typeof Quagga!=='undefined'){
-      _startQuagga(video);
-    }else{
-      if(msg)msg.innerHTML='<span style="color:var(--gold)"><i class="fas fa-exclamation-triangle"></i> استخدم قارئ الباركود الخارجي أو الإدخال اليدوي</span>';
+function _initBarcodeRawCapture(){
+  const inp=document.getElementById('barcode-input');
+  if(!inp||inp._rawCaptureBound)return;
+  inp._rawCaptureBound=true;
+  inp.addEventListener('keydown',function(e){
+    if(e.key==='Enter'){resetBarcodeRawBuffer();return;} // الإرسال نفسه بيتعامل معاه onkeydown الأصلي
+    if(e.ctrlKey||e.altKey||e.metaKey)return; // اختصارات المتصفح تمر عادي
+    if(e.key==='Backspace'){
+      e.preventDefault();
+      _barcodeRawBuffer=_barcodeRawBuffer.slice(0,-1);
+      inp.value=_barcodeRawBuffer;
+      onBarcodeInputChange(_barcodeRawBuffer);
+      return;
     }
-  }catch(e){
-    const overlay=document.getElementById('cam-status-overlay');
-    if(overlay)overlay.style.display='flex';
-    showNotif('خطأ في الكاميرا: '+e.message,'warning');
-  }
+    const ch=_barcodeCodeToChar(e);
+    if(ch!==null){
+      e.preventDefault();
+      _barcodeRawBuffer+=ch;
+      inp.value=_barcodeRawBuffer;
+      onBarcodeInputChange(_barcodeRawBuffer);
+    }
+  });
+  // مزامنة المخزن المؤقت عند اللصق المباشر (Ctrl+V) بدل الاعتماد على المفاتيح فقط
+  inp.addEventListener('paste',function(){
+    setTimeout(()=>{_barcodeRawBuffer=inp.value;onBarcodeInputChange(_barcodeRawBuffer);},0);
+  });
+}
+if(document.readyState==='loading'){
+  document.addEventListener('DOMContentLoaded',_initBarcodeRawCapture);
+}else{
+  _initBarcodeRawCapture();
 }
 
 // ===== واتساب — helper موحد مع encoding صحيح للإيموجي =====
@@ -3967,143 +4113,6 @@ function _waOpen(phone,msg){
   // encodeURIComponent يتعامل مع الإيموجي صح في المتصفحات الحديثة
   const encoded=encodeURIComponent(msg);
   window.open('https://wa.me/'+num+'?text='+encoded,'_blank');
-}
-let _bdInterval=null;
-let _quaggaRunning=false;
-
-// ── BarcodeDetector (Chrome/Edge native — أسرع وأدق) ──
-function _startBarcodeDetector(video){
-  let supported=['code_128','code_39','ean_13','ean_8','qr_code','itf','data_matrix','upc_a','upc_e'];
-  // بعض المتصفحات تدعم فورمات أقل، نجرب أولاً
-  BarcodeDetector.getSupportedFormats().then(fmts=>{
-    const use=supported.filter(f=>fmts.includes(f));
-    const detector=new BarcodeDetector({formats:use.length?use:fmts});
-    let _lCode='';let _lTime=0;
-    _bdInterval=setInterval(async()=>{
-      if(!_camActive||video.readyState<2)return;
-      try{
-        const res=await detector.detect(video);
-        if(res.length){
-          const code=res[0].rawValue;
-          const now=Date.now();
-          if(code!==_lCode||now-_lTime>3000){_lCode=code;_lTime=now;_handleCameraScan(code);}
-        }
-      }catch(e){}
-    },250);
-  }).catch(()=>{
-    // getSupportedFormats غير متاحة، نستخدم default
-    const detector=new BarcodeDetector({formats:supported});
-    let _lCode='';let _lTime=0;
-    _bdInterval=setInterval(async()=>{
-      if(!_camActive||video.readyState<2)return;
-      try{
-        const res=await detector.detect(video);
-        if(res.length){
-          const code=res[0].rawValue;
-          const now=Date.now();
-          if(code!==_lCode||now-_lTime>3000){_lCode=code;_lTime=now;_handleCameraScan(code);}
-        }
-      }catch(e){}
-    },250);
-  });
-}
-
-// ── Quagga fallback (Firefox + متصفحات قديمة) ──
-function _startQuagga(video){
-  if(typeof Quagga==='undefined'||_quaggaRunning)return;
-  _quaggaRunning=true;
-  // Quagga يحتاج container div وليس video مباشرة
-  const container=video.parentElement||document.body;
-  Quagga.init({
-    inputStream:{
-      type:'LiveStream',
-      target:container,
-      constraints:{
-        width:{ideal:1280},height:{ideal:720},
-        facingMode:'environment'
-      },
-    },
-    locator:{patchSize:'medium',halfSample:true},
-    numOfWorkers:2,
-    frequency:10,
-    decoder:{
-      readers:['code_128_reader','code_39_reader','ean_reader','ean_8_reader','i2of5_reader','upc_reader']
-    },
-    locate:true,
-  },err=>{
-    if(err){
-      console.warn('Quagga init error:',err);
-      _quaggaRunning=false;
-      const msgEl=document.getElementById('cam-msg');
-      if(msgEl)msgEl.innerHTML='<span style="color:var(--gold)"><i class="fas fa-exclamation-triangle"></i> استخدم الإدخال اليدوي أو قارئ خارجي</span>';
-      return;
-    }
-    Quagga.start();
-  });
-
-  let _lCode='';let _lTime=0;
-  Quagga.onDetected(data=>{
-    if(!_camActive)return;
-    const code=data.codeResult?.code;
-    if(!code)return;
-    const now=Date.now();
-    if(code!==_lCode||now-_lTime>3000){_lCode=code;_lTime=now;_handleCameraScan(code);}
-  });
-}
-
-let _lastCamScan='';let _lastCamTime=0;
-function _handleCameraScan(code){
-  const now=Date.now();
-  if(code===_lastCamScan&&now-_lastCamTime<3000)return;
-  _lastCamScan=code;_lastCamTime=now;
-
-  const msg=document.getElementById('cam-msg');
-  if(msg)msg.innerHTML=`<span style="color:var(--gold)"><i class="fas fa-barcode"></i> تم قراءة: <b>${code}</b></span>`;
-
-  // إيجاد العضو وتسجيل الحضور
-  const m=members.find(x=>x.barcode===code||x.id===code||x.id.replace('XG-','')===code);
-  if(m){
-    playBeep('success');
-    _recordAttendance(m);
-  }else{
-    playBeep('error');
-    showNotif('لم يُعثر على عضو: '+code,'warning');
-  }
-}
-
-function stopAttCamera(showOverlay=true){
-  _camActive=false;
-  if(_camReader){
-    try{_camReader.reset();}catch(e){}
-    try{_camReader.stopAsyncDecode();}catch(e){}
-    _camReader=null;
-  }
-  if(_bdInterval){clearInterval(_bdInterval);_bdInterval=null;}
-  if(_quaggaRunning){
-    try{Quagga.stop();}catch(e){}
-    _quaggaRunning=false;
-  }
-  if(_camStream){_camStream.getTracks().forEach(t=>t.stop());_camStream=null;}
-  const video=document.getElementById('att-camera-video');
-  if(video)video.srcObject=null;
-  const msg=document.getElementById('cam-msg');
-  if(msg)msg.textContent='';
-  if(showOverlay){
-    const overlay=document.getElementById('cam-status-overlay');
-    if(overlay)overlay.style.display='flex';
-  }
-}
-
-function switchCamera(idx){
-  _camIdx=parseInt(idx);
-  if(_camActive)_startCamStream(_camIdx);
-}
-
-function flipCamera(){
-  _camIdx=(_camIdx+1)%Math.max(_camDevices.length,1);
-  const sel=document.getElementById('camera-select');
-  if(sel)sel.value=_camIdx;
-  if(_camActive)_startCamStream(_camIdx);
 }
 
 // ===== الإدخال اليدوي مع بحث سريع =====
@@ -4159,6 +4168,7 @@ function scanMember(){
   const val=(document.getElementById('barcode-input')?.value||'').trim();
   if(!val)return;
   document.getElementById('barcode-input').value='';
+  resetBarcodeRawBuffer();
   if(_isDuplicateScan(val))return;
   const m=members.find(x=>x.barcode===val||x.id===val||x.id.replace('XG-','')===val||x.name.includes(val));
   if(m){playBeep('success');_recordAttendance(m);}
@@ -4203,17 +4213,6 @@ function _recordAttendance(m){
     resultEl.style.display='block';
     resultEl.className='scan-result warning';
     showNotif(m.name+' — تم تسجيل حضوره اليوم مسبقاً','warning');
-
-    const flashName=document.getElementById('cam-flash-name');
-    const flashInfo=document.getElementById('cam-flash-info');
-    const flashResult=document.getElementById('cam-flash-result');
-    if(flashResult&&_attMode==='camera'){
-      if(flashName)flashName.textContent='⚠️ '+m.name+' — مسجّل بالفعل';
-      if(flashInfo)flashInfo.textContent='تم تسجيل حضوره اليوم الساعة '+lastTime;
-      flashResult.style.background='linear-gradient(0deg,rgba(158,53,56,0.9),transparent)';
-      flashResult.style.display='block';
-      setTimeout(()=>{if(flashResult)flashResult.style.display='none';},3500);
-    }
     return;
   }
 
@@ -4240,17 +4239,6 @@ function _recordAttendance(m){
     resultEl.style.display='block';
     resultEl.className='scan-result warning';
     showNotif('🔴 '+m.name+' — مرفوض! الاشتراك منتهي','warning');
-    // فلاش الكاميرا
-    const flashName=document.getElementById('cam-flash-name');
-    const flashInfo=document.getElementById('cam-flash-info');
-    const flashResult=document.getElementById('cam-flash-result');
-    if(flashResult&&_attMode==='camera'){
-      if(flashName)flashName.textContent='🔴 '+m.name+' — مرفوض';
-      if(flashInfo)flashInfo.textContent='الاشتراك منتهي — يجب التجديد';
-      flashResult.style.background='linear-gradient(0deg,rgba(158,53,56,0.95),transparent)';
-      flashResult.style.display='block';
-      setTimeout(()=>{if(flashResult)flashResult.style.display='none';},4000);
-    }
     return;
   }
 
@@ -4258,18 +4246,6 @@ function _recordAttendance(m){
   const record={id:m.id,name:m.name,ci:m.ci,type,time:now.toISOString()};
   attendance.unshift(record);
   lsSave();
-
-  // عرض flash فوق الكاميرا
-  const flashName=document.getElementById('cam-flash-name');
-  const flashInfo=document.getElementById('cam-flash-info');
-  const flashResult=document.getElementById('cam-flash-result');
-  if(flashResult&&_attMode==='camera'){
-    if(flashName)flashName.textContent='✅ '+m.name;
-    if(flashInfo)flashInfo.textContent=m.id+' · '+(priceNames[m.type]||m.type)+' · تسجيل حضور '+now.toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});
-    flashResult.style.background='linear-gradient(0deg,rgba(39,199,112,0.9),transparent)';
-    flashResult.style.display='block';
-    setTimeout(()=>{if(flashResult)flashResult.style.display='none';},3500);
-  }
 
   // بطاقة نتيجة المسح المحسّنة
   const resultEl=document.getElementById('scan-result');
@@ -4305,20 +4281,15 @@ function _recordAttendance(m){
   // مسح حقل القارئ
   const barcodeInput=document.getElementById('barcode-input');
   if(barcodeInput&&_attMode==='reader'){
-    setTimeout(()=>{barcodeInput.value='';barcodeInput.focus();const ind=document.getElementById('barcode-typing-indicator');if(ind)ind.style.display='none';},500);
+    setTimeout(()=>{barcodeInput.value='';resetBarcodeRawBuffer();barcodeInput.focus();const ind=document.getElementById('barcode-typing-indicator');if(ind)ind.style.display='none';},500);
   }
 
   // تحديث العدادات
   const todayRecs=attendance.filter(a=>new Date(a.time).toDateString()===todayStr);
-  const inCount=todayRecs.length;
   const uniqueCount=new Set(todayRecs.map(a=>a.id)).size;
-  document.getElementById('att-today-in').textContent=inCount;
-  const outEl=document.getElementById('att-today-out');if(outEl)outEl.textContent=0;
-  document.getElementById('att-today-now').textContent=inCount;
-  const uniqEl=document.getElementById('att-unique-today');
-  if(uniqEl)uniqEl.textContent=uniqueCount;
-  document.getElementById('today-count').textContent=inCount;
-  document.getElementById('today-attend').textContent=inCount;
+  document.getElementById('att-today-in').textContent=uniqueCount;
+  document.getElementById('today-count').textContent=uniqueCount;
+  document.getElementById('today-attend').textContent=uniqueCount;
   renderAttendanceLog();
   autoRefresh();
 }
