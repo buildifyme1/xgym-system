@@ -16,6 +16,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.6/JsBarcode.all.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -569,6 +570,52 @@ body.role-receptionist .recep-hide{display:none!important}
 .att-mode-tab{border:none;border-radius:10px;padding:10px 4px;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;background:transparent;color:var(--text3);font-family:'Cairo',sans-serif}
 .att-mode-tab.active{background:var(--gold);color:#fff}
 .att-mode-tab i{display:block;font-size:17px;margin-bottom:4px}
+
+/* ===== فترات الحضور (صباح/سيدات/مساء) ===== */
+.att-period-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:14px}
+@media(max-width:900px){.att-period-grid{grid-template-columns:1fr}}
+.att-period-card{display:flex;align-items:center;gap:14px;border-radius:16px;padding:16px 18px;border:1px solid var(--border2);position:relative;overflow:hidden;transition:var(--transition)}
+.att-period-card:hover{transform:translateY(-3px)}
+.att-period-card::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:16px 16px 0 0}
+.att-period-icon{width:48px;height:48px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0}
+.att-period-val{font-size:24px;font-weight:900;line-height:1}
+.att-period-label{font-size:11.5px;color:var(--text3);margin-top:4px;font-weight:700}
+.att-period-time{font-size:10px;color:var(--text3);margin-top:2px;opacity:.8}
+.att-period-card.p-morning{background:linear-gradient(135deg,rgba(74,158,255,0.12),rgba(74,158,255,0.02));border-color:rgba(74,158,255,0.22)}
+.att-period-card.p-morning::after{background:linear-gradient(90deg,#4a9eff,#1a7acc)}
+.att-period-card.p-morning .att-period-icon{background:rgba(74,158,255,0.15);color:var(--blue)}
+.att-period-card.p-morning .att-period-val{color:var(--blue)}
+.att-period-card.p-female{background:linear-gradient(135deg,rgba(230,80,150,0.12),rgba(230,80,150,0.02));border-color:rgba(230,80,150,0.25)}
+.att-period-card.p-female::after{background:linear-gradient(90deg,#e65096,#c23a7a)}
+.att-period-card.p-female .att-period-icon{background:rgba(230,80,150,0.15);color:#e65096}
+.att-period-card.p-female .att-period-val{color:#e65096}
+.att-period-card.p-evening{background:linear-gradient(135deg,rgba(214,71,76,0.12),rgba(214,71,76,0.02));border-color:rgba(214,71,76,0.22)}
+.att-period-card.p-evening::after{background:linear-gradient(90deg,var(--gold),var(--gold2))}
+.att-period-card.p-evening .att-period-icon{background:rgba(214,71,76,0.15);color:var(--gold)}
+.att-period-card.p-evening .att-period-val{color:var(--gold)}
+
+/* ===== تبويبات فلترة الفترة فوق السجل ===== */
+.att-session-tabs{display:flex;gap:6px;padding:10px 14px;border-bottom:1px solid var(--border);flex-wrap:wrap;background:rgba(255,255,255,0.01)}
+.att-session-tab{border:1px solid var(--border2);border-radius:20px;padding:6px 14px;font-size:11px;font-weight:700;cursor:pointer;transition:all .2s;background:transparent;color:var(--text3);font-family:'Cairo',sans-serif}
+.att-session-tab.active{background:var(--gold);color:#fff;border-color:var(--gold)}
+
+/* ===== شريط التنقل بين الأيام ===== */
+.att-date-nav{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:14px 0}
+.att-date-nav input[type=date]{background:var(--bg3);border:1px solid var(--border2);color:var(--text);border-radius:10px;padding:9px 12px;font-family:'Cairo',sans-serif;font-size:12.5px;font-weight:600}
+.att-date-nav-btn{background:var(--bg3);border:1px solid var(--border2);color:var(--text2);border-radius:10px;padding:9px 13px;font-size:12px;font-weight:700;cursor:pointer;transition:var(--transition);font-family:'Cairo',sans-serif;display:inline-flex;align-items:center;gap:6px}
+.att-date-nav-btn:hover{border-color:var(--gold);color:var(--gold)}
+.att-date-nav-btn.today{background:rgba(214,71,76,0.1);color:var(--gold);border-color:rgba(214,71,76,0.25)}
+
+/* ===== صفحة سجل الحضور ===== */
+.rec-filters-bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px;background:var(--bg3);border:1px solid var(--border);border-radius:14px;padding:14px 16px}
+.rec-filters-bar .form-input,.rec-filters-bar .form-select{width:auto;flex:1;min-width:150px}
+.rec-sort-th{cursor:pointer;user-select:none;white-space:nowrap}
+.rec-sort-th:hover{color:var(--gold)!important}
+.rec-sort-th i{margin-right:4px;opacity:.6;font-size:9px}
+.session-badge{display:inline-flex;align-items:center;gap:4px;border-radius:20px;padding:3px 10px;font-size:10.5px;font-weight:700}
+.session-badge.male_morning{background:rgba(74,158,255,0.12);color:var(--blue);border:1px solid rgba(74,158,255,0.2)}
+.session-badge.female{background:rgba(230,80,150,0.12);color:#e65096;border:1px solid rgba(230,80,150,0.25)}
+.session-badge.male_evening{background:rgba(214,71,76,0.12);color:var(--gold);border:1px solid rgba(214,71,76,0.2)}
 @media(max-width:1024px){
   .attendance-layout{grid-template-columns:1fr}
 }
@@ -837,6 +884,7 @@ body.role-receptionist .recep-hide{display:none!important}
     <div class="nav-section">الرئيسية</div>
     <div class="nav-item active admin-only" onclick="showPage('dashboard')"><i class="fas fa-chart-line"></i> لوحة التحكم</div>
     <div class="nav-item" onclick="showPage('attendance')"><i class="fas fa-qrcode"></i> الحضور والباركود<span class="nav-badge" id="today-count">0</span></div>
+    <div class="nav-item" onclick="showPage('attendance-record')"><i class="fas fa-clipboard-list"></i> سجل الحضور</div>
     <div class="nav-section">الأعضاء</div>
     <div class="nav-item" onclick="showPage('members')"><i class="fas fa-users"></i> إدارة الأعضاء وإضافتهم</div>
     <div class="nav-item admin-only" onclick="showPage('subscriptions')"><i class="fas fa-id-card"></i> الاشتراكات</div>
@@ -970,9 +1018,43 @@ body.role-receptionist .recep-hide{display:none!important}
         <div class="att-stat-icon"><i class="fas fa-user-check"></i></div>
         <div>
           <div class="att-stat-val" id="att-today-in">0</div>
-          <div class="att-stat-label">عضو حضر اليوم</div>
+          <div class="att-stat-label" id="att-today-label">عضو حضر اليوم</div>
         </div>
       </div>
+      <div class="att-period-grid">
+        <div class="att-period-card p-morning">
+          <div class="att-period-icon"><i class="fas fa-sun"></i></div>
+          <div>
+            <div class="att-period-val" id="att-period-male_morning">0</div>
+            <div class="att-period-label">رجالي صباح</div>
+            <div class="att-period-time">12:00 ص — 10:00 ص</div>
+          </div>
+        </div>
+        <div class="att-period-card p-female">
+          <div class="att-period-icon"><i class="fas fa-venus"></i></div>
+          <div>
+            <div class="att-period-val" id="att-period-female">0</div>
+            <div class="att-period-label">سيدات</div>
+            <div class="att-period-time">10:00 ص — 4:00 م</div>
+          </div>
+        </div>
+        <div class="att-period-card p-evening">
+          <div class="att-period-icon"><i class="fas fa-moon"></i></div>
+          <div>
+            <div class="att-period-val" id="att-period-male_evening">0</div>
+            <div class="att-period-label">رجالي مساء</div>
+            <div class="att-period-time">4:00 م — 12:00 ص</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- تنقل بين الأيام -->
+    <div class="att-date-nav">
+      <button class="att-date-nav-btn" onclick="changeAttViewDate(-1)"><i class="fas fa-chevron-right"></i> اليوم السابق</button>
+      <button class="att-date-nav-btn today" onclick="setAttViewDateToday()"><i class="fas fa-calendar-day"></i> اليوم</button>
+      <button class="att-date-nav-btn" onclick="changeAttViewDate(1)">اليوم التالي <i class="fas fa-chevron-left"></i></button>
+      <input type="date" id="att-view-date" onchange="onAttViewDatePick(this.value)">
     </div>
 
     <div class="attendance-layout">
@@ -1036,15 +1118,75 @@ body.role-receptionist .recep-hide{display:none!important}
         <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:linear-gradient(90deg,rgba(214,71,76,0.04),transparent)">
           <div style="display:flex;align-items:center;gap:8px">
             <i class="fas fa-list-ul" style="color:var(--gold)"></i>
-            <span style="font-size:14px;font-weight:700">سجل الحضور — اليوم</span>
+            <span style="font-size:14px;font-weight:700" id="att-log-title">سجل الحضور — اليوم</span>
           </div>
           <div style="display:flex;align-items:center;gap:8px">
             <span style="background:rgba(214,71,76,0.12);color:var(--gold);border:1px solid rgba(214,71,76,0.2);border-radius:20px;padding:3px 12px;font-size:11px;font-weight:700" id="att-count-badge">0 سجل</span>
           </div>
         </div>
+        <div class="att-session-tabs" id="att-session-tabs">
+          <button class="att-session-tab active" data-session="all" onclick="setAttLogSession('all')">الكل</button>
+          <button class="att-session-tab" data-session="male_morning" onclick="setAttLogSession('male_morning')">رجالي صباح</button>
+          <button class="att-session-tab" data-session="female" onclick="setAttLogSession('female')">سيدات</button>
+          <button class="att-session-tab" data-session="male_evening" onclick="setAttLogSession('male_evening')">رجالي مساء</button>
+        </div>
         <div id="attendance-log" style="flex:1;overflow-y:auto;max-height:600px"></div>
       </div>
 
+    </div>
+  </div>
+
+  <!-- ATTENDANCE RECORD -->
+  <div class="content" id="page-attendance-record">
+    <div class="section-hdr">
+      <h2><i class="fas fa-clipboard-list" style="color:var(--gold);margin-left:8px"></i>سجل الحضور</h2>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-outline btn-sm" onclick="exportRecordExcel()"><i class="fas fa-file-excel"></i>Excel</button>
+        <button class="btn btn-outline btn-sm" onclick="exportRecordPDF()"><i class="fas fa-file-pdf"></i>PDF</button>
+        <button class="btn btn-outline btn-sm" onclick="printRecordTable()"><i class="fas fa-print"></i>طباعة</button>
+      </div>
+    </div>
+
+    <!-- تنقل بين الأيام -->
+    <div class="att-date-nav">
+      <button class="att-date-nav-btn" onclick="changeRecDate(-1)"><i class="fas fa-chevron-right"></i> اليوم السابق</button>
+      <button class="att-date-nav-btn today" onclick="setRecDateToday()"><i class="fas fa-calendar-day"></i> اليوم</button>
+      <button class="att-date-nav-btn" onclick="changeRecDate(1)">اليوم التالي <i class="fas fa-chevron-left"></i></button>
+      <input type="date" id="rec-date" onchange="onRecDatePick(this.value)">
+      <button class="att-date-nav-btn" onclick="setRecDateAll()" id="rec-all-btn" title="عرض كل الأيام"><i class="fas fa-infinity"></i> كل الأيام</button>
+    </div>
+
+    <!-- فلاتر وبحث -->
+    <div class="rec-filters-bar">
+      <input class="form-input" id="rec-search" placeholder="بحث بالاسم..." oninput="renderAttendanceRecord()">
+      <input class="form-input" id="rec-search-id" placeholder="بحث برقم العضوية..." oninput="renderAttendanceRecord()">
+      <input class="form-input" id="rec-search-phone" placeholder="بحث برقم الهاتف..." oninput="renderAttendanceRecord()">
+      <select class="form-select" id="rec-session-filter" onchange="renderAttendanceRecord()">
+        <option value="all">كل الفترات</option>
+        <option value="male_morning">رجالي صباح</option>
+        <option value="female">سيدات</option>
+        <option value="male_evening">رجالي مساء</option>
+      </select>
+    </div>
+
+    <div class="table-wrap" style="background:var(--bg3);border:1px solid var(--border);border-radius:16px">
+      <table id="rec-table">
+        <thead>
+          <tr>
+            <th class="rec-sort-th" onclick="setRecSort('date')">التاريخ <i class="fas fa-sort"></i></th>
+            <th class="rec-sort-th" onclick="setRecSort('time')">الوقت <i class="fas fa-sort"></i></th>
+            <th class="rec-sort-th" onclick="setRecSort('name')">اسم العضو <i class="fas fa-sort"></i></th>
+            <th class="rec-sort-th" onclick="setRecSort('id')">رقم العضوية <i class="fas fa-sort"></i></th>
+            <th>رقم الهاتف</th>
+            <th>الفترة</th>
+          </tr>
+        </thead>
+        <tbody id="rec-tbody"></tbody>
+      </table>
+    </div>
+    <div id="rec-empty" style="display:none;text-align:center;padding:60px 20px;color:var(--text3)">
+      <i class="fas fa-clipboard-list" style="font-size:40px;opacity:.3;display:block;margin-bottom:12px"></i>
+      <div style="font-size:13px">لا توجد سجلات مطابقة</div>
     </div>
   </div>
 
@@ -1925,7 +2067,10 @@ function sbSubscribePrices(client){
 const SB_SQL=`-- Run this once in Supabase SQL Editor
 -- جداول النظام
 create table if not exists xgym_members (id text primary key, data jsonb not null, updated_at timestamptz default now());
-create table if not exists xgym_attendance (id bigserial primary key, member_id text, member_name text, type text, time timestamptz, ci int default 0);
+create table if not exists xgym_attendance (id bigserial primary key, member_id text, member_name text, member_phone text, type text, time timestamptz, ci int default 0, session text);
+-- ترقية الجداول القديمة (لا يحذف أي بيانات موجودة)
+alter table xgym_attendance add column if not exists session text;
+alter table xgym_attendance add column if not exists member_phone text;
 create table if not exists xgym_transactions (id bigserial primary key, type text, amount numeric, date text, note text, category text);
 create table if not exists xgym_prices (key text primary key, price numeric, name text, duration int, updated_at timestamptz default now());
 create table if not exists xgym_coupons (id bigserial primary key, code text, type text, value numeric, active boolean default true, uses int default 0);
@@ -1936,6 +2081,7 @@ create table if not exists xgym_settings (key text primary key, value jsonb, upd
 create index if not exists idx_attendance_member_id on xgym_attendance(member_id);
 create index if not exists idx_attendance_time on xgym_attendance(time desc);
 create index if not exists idx_attendance_type on xgym_attendance(type);
+create index if not exists idx_attendance_session on xgym_attendance(session);
 create index if not exists idx_attendance_member_time on xgym_attendance(member_id, time desc);
 create index if not exists idx_transactions_category on xgym_transactions(category);
 create index if not exists idx_transactions_date on xgym_transactions(date);
@@ -2030,8 +2176,9 @@ async function sbPushAttendance(){
     await _supabase.from('xgym_attendance').delete().gte('id',0);
     if(attendance.length){
       const rows=attendance.map(a=>({
-        member_id:a.id||'', member_name:a.name||'',
-        type:a.type||'in', time:a.time||new Date().toISOString(), ci:a.ci||0
+        member_id:a.id||'', member_name:a.name||'', member_phone:a.phone||'',
+        type:a.type||'in', time:a.time||new Date().toISOString(), ci:a.ci||0,
+        session:a.session||getRecordSession(a)
       }));
       await _supabase.from('xgym_attendance').insert(rows);
     }
@@ -2163,7 +2310,7 @@ async function sbPullAll(force=false){
 
     // الحضور
     if(aRes.data&&aRes.data.length)
-      attendance=aRes.data.map(r=>({id:r.member_id,name:r.member_name,type:r.type,time:r.time,ci:r.ci||0}));
+      attendance=aRes.data.map(r=>({id:r.member_id,name:r.member_name,phone:r.member_phone||'',type:r.type,time:r.time,ci:r.ci||0,session:r.session||getSessionForTime(new Date(r.time))}));
 
     // المعاملات المالية (الدخل والمصروف) — مع إزالة التكرارات
     if(tRes.data&&tRes.data.length){
@@ -2372,18 +2519,40 @@ let coupons=_saved.coupons||[];
 let memberHistory=_saved.memberHistory||{};
 if(_saved.durations)Object.assign(DURATIONS,_saved.durations);
 
+// ===== نظام فترات الحضور (رجالي صباح / سيدات / رجالي مساء) =====
+// 12:00ص - 09:59ص = رجالي صباح | 10:00ص - 03:59م = سيدات | 04:00م - 11:59م = رجالي مساء
+const SESSION_LABELS={male_morning:'رجالي صباح',female:'سيدات',male_evening:'رجالي مساء'};
+const SESSION_ICONS={male_morning:'fa-sun',female:'fa-venus',male_evening:'fa-moon'};
+function getSessionForTime(d){
+  const h=d.getHours();
+  if(h>=0&&h<10)return 'male_morning';
+  if(h>=10&&h<16)return 'female';
+  return 'male_evening';
+}
+// دعم السجلات القديمة التي لا تملك حقل session — يُحسب تلقائياً من وقت التسجيل
+function getRecordSession(a){
+  return a.session||getSessionForTime(new Date(a.time));
+}
+
+let _attViewDate=new Date();       // اليوم المعروض في صفحة الحضور والباركود
+let _attLogSession='all';          // فلتر الفترة في سجل صفحة الحضور
 
 function showPage(p){
   document.querySelectorAll('.content').forEach(c=>c.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('page-'+p).classList.add('active');
-  const titles={dashboard:'لوحة التحكم',attendance:'الحضور والباركود',members:'إدارة الأعضاء',subscriptions:'الاشتراكات',expiring:'على وشك الانتهاء',finance:'الإدارة المالية',reports:'التقارير الشاملة',settings:'الإعدادات'};
+  const titles={dashboard:'لوحة التحكم',attendance:'الحضور والباركود','attendance-record':'سجل الحضور',members:'إدارة الأعضاء',subscriptions:'الاشتراكات',expiring:'على وشك الانتهاء',finance:'الإدارة المالية',reports:'التقارير الشاملة',settings:'الإعدادات'};
   document.getElementById('page-title').textContent=titles[p]||p;
-  const items=document.querySelectorAll('.nav-item');
-  items.forEach(i=>{if(i.textContent.includes((titles[p]||'').slice(0,4)))i.classList.add('active')});
+  const exactNav=document.querySelector(`.nav-item[onclick="showPage('${p}')"]`);
+  if(exactNav){exactNav.classList.add('active');}
+  else{
+    const items=document.querySelectorAll('.nav-item');
+    items.forEach(i=>{if(i.textContent.includes((titles[p]||'').slice(0,4)))i.classList.add('active')});
+  }
   if(p==='dashboard')renderDashboard();
   if(p==='members')renderMembers();
-  if(p==='attendance'){renderAttendance();setAttMode('reader');}
+  if(p==='attendance'){_attViewDate=new Date();renderAttendance();setAttMode('reader');}
+  if(p==='attendance-record'){renderAttendanceRecord();}
   if(p==='finance')renderFinance();
   if(p==='reports')renderReports();
   if(p==='subscriptions')renderSubscriptions();
@@ -2714,13 +2883,59 @@ function renderMemberCard(m){
 }
 
 
-function renderAttendance(){
+function _isSameViewDate(iso){return new Date(iso).toDateString()===_attViewDate.toDateString();}
+
+function changeAttViewDate(delta){
+  _attViewDate=new Date(_attViewDate.getFullYear(),_attViewDate.getMonth(),_attViewDate.getDate()+delta);
+  renderAttendance();
+}
+function setAttViewDateToday(){_attViewDate=new Date();renderAttendance();}
+function onAttViewDatePick(val){
+  if(!val)return;
+  const [y,m,d]=val.split('-').map(Number);
+  _attViewDate=new Date(y,m-1,d);
+  renderAttendance();
+}
+function setAttLogSession(session){
+  _attLogSession=session;
+  document.querySelectorAll('#att-session-tabs .att-session-tab').forEach(t=>t.classList.toggle('active',t.dataset.session===session));
   renderAttendanceLog();
-  const todayStr=new Date().toDateString();
-  const todayRecs=attendance.filter(a=>new Date(a.time).toDateString()===todayStr);
-  const uniqueToday=new Set(todayRecs.filter(a=>a.type==='in').map(a=>a.id)).size;
-  document.getElementById('att-today-in').textContent=uniqueToday;
-  document.getElementById('att-count-badge').textContent=uniqueToday+' حضور اليوم';
+}
+
+function renderAttendance(){
+  // مزامنة حقل اختيار التاريخ
+  const p=n=>String(n).padStart(2,'0');
+  const dateInput=document.getElementById('att-view-date');
+  if(dateInput)dateInput.value=`${_attViewDate.getFullYear()}-${p(_attViewDate.getMonth()+1)}-${p(_attViewDate.getDate())}`;
+  const isToday=_attViewDate.toDateString()===new Date().toDateString();
+  const titleEl=document.getElementById('att-today-label');
+  if(titleEl)titleEl.textContent=isToday?'عضو حضر اليوم':'عضو حضر في هذا اليوم';
+  const logTitleEl=document.getElementById('att-log-title');
+  if(logTitleEl)logTitleEl.textContent=isToday?'سجل الحضور — اليوم':'سجل الحضور — '+_attViewDate.toLocaleDateString('ar-EG');
+
+  renderAttendanceLog();
+
+  const viewRecs=attendance.filter(a=>a.type==='in'&&_isSameViewDate(a.time));
+  const uniqueIds=new Set(viewRecs.map(a=>a.id));
+  document.getElementById('att-today-in').textContent=uniqueIds.size;
+
+  // إحصاء كل فترة (حسب عدد الأعضاء الفريدين في كل فترة لهذا اليوم)
+  const perSession={male_morning:new Set(),female:new Set(),male_evening:new Set()};
+  viewRecs.forEach(a=>{
+    const s=getRecordSession(a);
+    if(perSession[s])perSession[s].add(a.id);
+  });
+  Object.keys(perSession).forEach(s=>{
+    const el=document.getElementById('att-period-'+s);
+    if(el)el.textContent=perSession[s].size;
+  });
+
+  // تحديث الشارة الرئيسية إذا كان اليوم الحالي
+  if(isToday){
+    document.getElementById('today-count').textContent=uniqueIds.size;
+    const ta=document.getElementById('today-attend');
+    if(ta)ta.textContent=uniqueIds.size;
+  }
 }
 
 // ===== تحديث يومي شامل (عداد الحضور + أيام الاشتراك + التنبيهات) =====
@@ -2739,6 +2954,11 @@ setInterval(()=>{
   // تحديث صفحة الحضور تلقائياً كل 5 ثوان إذا كانت مفتوحة
   if(document.getElementById("page-attendance").classList.contains("active")){
     renderAttendance();
+  }
+  // تحديث صفحة سجل الحضور تلقائياً إذا كانت مفتوحة
+  const recPage=document.getElementById("page-attendance-record");
+  if(recPage&&recPage.classList.contains("active")){
+    renderAttendanceRecord();
   }
   
   // فحص تغيير اليوم
@@ -2787,14 +3007,16 @@ function playBeep(type){
 
 function renderAttendanceLog(){
   const log=document.getElementById('attendance-log');
-  const today=new Date().toDateString();
-  const todayLogs=attendance.filter(a=>new Date(a.time).toDateString()===today);
-  const displayLogs=todayLogs.length?todayLogs:attendance;
+  const dayLogs=attendance.filter(a=>_isSameViewDate(a.time));
+  // اعتماد سجلات اليوم الحالي فقط ما لم يكن الأرشيف فاضي فعلياً بلا سجلات إطلاقاً في النظام
+  let displayLogs=dayLogs.length?dayLogs:(attendance.length?[]:attendance);
+  if(_attLogSession!=='all')displayLogs=displayLogs.filter(a=>getRecordSession(a)===_attLogSession);
 
   if(!displayLogs.length){
+    const isToday=_attViewDate.toDateString()===new Date().toDateString();
     log.innerHTML=`<div style="text-align:center;padding:60px 20px;color:var(--text3)">
       <i class="fas fa-fingerprint" style="font-size:40px;opacity:.3;display:block;margin-bottom:12px"></i>
-      <div style="font-size:13px">لا يوجد حضور اليوم بعد</div>
+      <div style="font-size:13px">${isToday?'لا يوجد حضور اليوم بعد':'لا يوجد حضور في هذا اليوم'}</div>
     </div>`;
     document.getElementById('att-count-badge').textContent='0 سجل';
     return;
@@ -2803,8 +3025,8 @@ function renderAttendanceLog(){
   // تجميع السجلات حسب العضو لإظهار الحالة
   const memberMap={};
   displayLogs.forEach(a=>{
-    if(!memberMap[a.id])memberMap[a.id]={name:a.name,ci:a.ci,in:null,out:null,id:a.id};
-    if(a.type==='in'&&!memberMap[a.id].in)memberMap[a.id].in=a.time;
+    if(!memberMap[a.id])memberMap[a.id]={name:a.name,ci:a.ci,in:null,out:null,id:a.id,session:getRecordSession(a)};
+    if(a.type==='in'&&!memberMap[a.id].in){memberMap[a.id].in=a.time;memberMap[a.id].session=getRecordSession(a);}
     if(a.type==='out'&&!memberMap[a.id].out)memberMap[a.id].out=a.time;
   });
 
@@ -2816,7 +3038,7 @@ function renderAttendanceLog(){
       <div class="att-avatar" style="background:${AVATAR_COLORS[mData.ci%5]};color:${AVATAR_TEXT[mData.ci%5]};width:38px;height:38px;font-size:13px;flex-shrink:0">${mData.name.split(' ').map(w=>w[0]).join('')}</div>
       <div style="flex:1;min-width:0">
         <div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${mData.name}</div>
-        <div style="font-size:10px;color:var(--text3);margin-top:1px">${mData.id}</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:1px">${mData.id} · <span class="session-badge ${mData.session}" style="padding:1px 7px;font-size:9px"><i class="fas ${SESSION_ICONS[mData.session]}"></i>${SESSION_LABELS[mData.session]}</span></div>
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0">
         <span style="background:${isIn?'rgba(39,199,112,0.12)':'rgba(158,53,56,0.12)'};color:${isIn?'var(--green)':'var(--red)'};border-radius:20px;padding:2px 9px;font-size:10px;font-weight:800">
@@ -2827,7 +3049,173 @@ function renderAttendanceLog(){
     </div>`;
   }).join('');
 
-  document.getElementById('att-count-badge').textContent=displayLogs.length+' سجل اليوم';
+  document.getElementById('att-count-badge').textContent=displayLogs.length+' سجل';
+}
+
+// ===== صفحة سجل الحضور (جدول كامل + بحث + فلترة + فرز + تصدير) =====
+let _recDate=new Date();
+let _recShowAll=false;
+let _recSortKey='time';
+let _recSortDir='desc';
+
+function changeRecDate(delta){
+  _recShowAll=false;
+  _recDate=new Date(_recDate.getFullYear(),_recDate.getMonth(),_recDate.getDate()+delta);
+  renderAttendanceRecord();
+}
+function setRecDateToday(){_recShowAll=false;_recDate=new Date();renderAttendanceRecord();}
+function setRecDateAll(){_recShowAll=!_recShowAll;renderAttendanceRecord();}
+function onRecDatePick(val){
+  if(!val)return;
+  _recShowAll=false;
+  const [y,m,d]=val.split('-').map(Number);
+  _recDate=new Date(y,m-1,d);
+  renderAttendanceRecord();
+}
+function setRecSort(key){
+  if(_recSortKey===key)_recSortDir=_recSortDir==='asc'?'desc':'asc';
+  else{_recSortKey=key;_recSortDir='desc';}
+  renderAttendanceRecord();
+}
+
+function _recGetFilteredSorted(){
+  const nameQ=(document.getElementById('rec-search')?.value||'').trim();
+  const idQ=(document.getElementById('rec-search-id')?.value||'').trim();
+  const phoneQ=(document.getElementById('rec-search-phone')?.value||'').trim();
+  const sessionQ=document.getElementById('rec-session-filter')?.value||'all';
+
+  let rows=attendance.filter(a=>a.type==='in');
+  if(!_recShowAll)rows=rows.filter(a=>new Date(a.time).toDateString()===_recDate.toDateString());
+  if(nameQ)rows=rows.filter(a=>a.name&&a.name.includes(nameQ));
+  if(idQ)rows=rows.filter(a=>a.id&&(a.id.includes(idQ)||a.id.replace('XG-','').includes(idQ)));
+  if(phoneQ){
+    rows=rows.filter(a=>{
+      const mem=members.find(m=>m.id===a.id);
+      const phone=a.phone||(mem?mem.phone:'')||'';
+      return phone.includes(phoneQ);
+    });
+  }
+  if(sessionQ!=='all')rows=rows.filter(a=>getRecordSession(a)===sessionQ);
+
+  rows=rows.map(a=>{
+    const mem=members.find(m=>m.id===a.id);
+    return {...a,_phone:a.phone||(mem?mem.phone:'')||'—',_session:getRecordSession(a)};
+  });
+
+  rows.sort((a,b)=>{
+    let av,bv;
+    if(_recSortKey==='date'){av=new Date(a.time).setHours(0,0,0,0);bv=new Date(b.time).setHours(0,0,0,0);}
+    else if(_recSortKey==='time'){av=new Date(a.time).getTime();bv=new Date(b.time).getTime();}
+    else if(_recSortKey==='name'){av=a.name||'';bv=b.name||'';}
+    else if(_recSortKey==='id'){av=a.id||'';bv=b.id||'';}
+    if(av<bv)return _recSortDir==='asc'?-1:1;
+    if(av>bv)return _recSortDir==='asc'?1:-1;
+    return 0;
+  });
+  return rows;
+}
+
+function renderAttendanceRecord(){
+  const dateInput=document.getElementById('rec-date');
+  const p=n=>String(n).padStart(2,'0');
+  if(dateInput)dateInput.value=`${_recDate.getFullYear()}-${p(_recDate.getMonth()+1)}-${p(_recDate.getDate())}`;
+  const allBtn=document.getElementById('rec-all-btn');
+  if(allBtn)allBtn.classList.toggle('today',_recShowAll);
+
+  const rows=_recGetFilteredSorted();
+  const tbody=document.getElementById('rec-tbody');
+  const emptyEl=document.getElementById('rec-empty');
+  const tableWrap=document.getElementById('rec-table')?.closest('.table-wrap');
+
+  if(!rows.length){
+    tbody.innerHTML='';
+    if(emptyEl)emptyEl.style.display='block';
+    if(tableWrap)tableWrap.style.display='none';
+    return;
+  }
+  if(emptyEl)emptyEl.style.display='none';
+  if(tableWrap)tableWrap.style.display='';
+
+  tbody.innerHTML=rows.map(a=>{
+    const d=new Date(a.time);
+    const dateStr=d.toLocaleDateString('ar-EG');
+    const timeStr=d.toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});
+    return`<tr>
+      <td>${dateStr}</td>
+      <td>${timeStr}</td>
+      <td>${a.name||'—'}</td>
+      <td>${a.id||'—'}</td>
+      <td>${a._phone}</td>
+      <td><span class="session-badge ${a._session}"><i class="fas ${SESSION_ICONS[a._session]}"></i>${SESSION_LABELS[a._session]}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+function _recRowsForExport(){
+  return _recGetFilteredSorted().map(a=>{
+    const d=new Date(a.time);
+    return {
+      'التاريخ':d.toLocaleDateString('ar-EG'),
+      'الوقت':d.toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'}),
+      'اسم العضو':a.name||'',
+      'رقم العضوية':a.id||'',
+      'رقم الهاتف':a._phone||'',
+      'الفترة':SESSION_LABELS[a._session]||''
+    };
+  });
+}
+
+function exportRecordExcel(){
+  if(typeof XLSX==='undefined'){showNotif('تعذر تحميل مكتبة Excel — تأكد من الاتصال بالإنترنت','warning');return;}
+  const rows=_recRowsForExport();
+  if(!rows.length){showNotif('لا توجد سجلات للتصدير','warning');return;}
+  const ws=XLSX.utils.json_to_sheet(rows);
+  ws['!cols']=[{wch:14},{wch:10},{wch:22},{wch:14},{wch:16},{wch:14}];
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'سجل الحضور');
+  const fname='سجل_الحضور_'+dstr(_recShowAll?new Date():_recDate)+'.xlsx';
+  XLSX.writeFile(wb,fname);
+  showNotif('تم تصدير ملف Excel بنجاح','success');
+}
+
+function _recBuildPrintHTML(){
+  const rows=_recRowsForExport();
+  const title='سجل الحضور — '+(_recShowAll?'كل الأيام':_recDate.toLocaleDateString('ar-EG'));
+  const trs=rows.map(r=>`<tr><td>${r['التاريخ']}</td><td>${r['الوقت']}</td><td>${r['اسم العضو']}</td><td>${r['رقم العضوية']}</td><td>${r['رقم الهاتف']}</td><td>${r['الفترة']}</td></tr>`).join('');
+  return `<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="UTF-8"><title>${title}</title>
+  <style>
+    body{font-family:'Tahoma',sans-serif;padding:24px;color:#222}
+    h2{margin-bottom:4px}
+    p{color:#666;margin-top:0;font-size:12px}
+    table{width:100%;border-collapse:collapse;margin-top:16px}
+    th,td{border:1px solid #ccc;padding:8px 10px;text-align:right;font-size:12px}
+    th{background:#f2f2f2}
+    tr:nth-child(even){background:#fafafa}
+  </style></head><body>
+  <h2>${title}</h2>
+  <p>عدد السجلات: ${rows.length} — تاريخ الطباعة: ${new Date().toLocaleString('ar-EG')}</p>
+  <table><thead><tr><th>التاريخ</th><th>الوقت</th><th>اسم العضو</th><th>رقم العضوية</th><th>رقم الهاتف</th><th>الفترة</th></tr></thead>
+  <tbody>${trs}</tbody></table>
+  </body></html>`;
+}
+
+function printRecordTable(){
+  const rows=_recRowsForExport();
+  if(!rows.length){showNotif('لا توجد سجلات للطباعة','warning');return;}
+  const w=window.open('','_blank');
+  w.document.write(_recBuildPrintHTML());
+  w.document.close();
+  setTimeout(()=>w.print(),300);
+}
+
+function exportRecordPDF(){
+  const rows=_recRowsForExport();
+  if(!rows.length){showNotif('لا توجد سجلات للتصدير','warning');return;}
+  const w=window.open('','_blank');
+  w.document.write(_recBuildPrintHTML());
+  w.document.close();
+  showNotif('اختر "حفظ كـ PDF" من نافذة الطباعة لتصدير الملف','success');
+  setTimeout(()=>w.print(),300);
 }
 
 let financeWeekOffset=0;
@@ -4243,7 +4631,8 @@ function _recordAttendance(m){
   }
 
   const type='in';
-  const record={id:m.id,name:m.name,ci:m.ci,type,time:now.toISOString()};
+  const session=getSessionForTime(now);
+  const record={id:m.id,name:m.name,phone:m.phone||'',ci:m.ci,type,time:now.toISOString(),session};
   attendance.unshift(record);
   lsSave();
 
@@ -4270,6 +4659,7 @@ function _recordAttendance(m){
             <span style="color:${statusColor};font-size:11px;font-weight:700">${m.status==='active'?'✅ نشط':m.status==='expired'?'❌ منتهي':'🔒 مجمد'}</span>
             <span style="color:var(--text3);font-size:11px">|</span>
             <span style="color:var(--text2);font-size:11px"><i class="fas fa-clock" style="margin-left:3px"></i>${now.toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'})}</span>
+            <span class="session-badge ${session}"><i class="fas ${SESSION_ICONS[session]}"></i>${SESSION_LABELS[session]}</span>
           </div>
           ${m.days<=3&&m.status==='active'?`<div style="font-size:11px;color:var(--red);margin-top:6px;display:flex;align-items:center;gap:8px"><i class="fas fa-triangle-exclamation"></i> ينتهي خلال ${m.days} يوم! <button class="btn btn-sm" style="background:rgba(37,211,102,0.1);color:#25d366;border:1px solid rgba(37,211,102,0.2);padding:2px 8px;font-size:10px" onclick="sendWA('${m.phone}','${m.name}')"><i class="fab fa-whatsapp"></i>تذكير</button></div>`:''}
         </div>
@@ -4290,7 +4680,9 @@ function _recordAttendance(m){
   document.getElementById('att-today-in').textContent=uniqueCount;
   document.getElementById('today-count').textContent=uniqueCount;
   document.getElementById('today-attend').textContent=uniqueCount;
-  renderAttendanceLog();
+  if(document.getElementById('page-attendance').classList.contains('active'))renderAttendance();
+  else renderAttendanceLog();
+  if(document.getElementById('page-attendance-record')&&document.getElementById('page-attendance-record').classList.contains('active'))renderAttendanceRecord();
   autoRefresh();
 }
 function showNotif(msg,type){
