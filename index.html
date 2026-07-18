@@ -2491,6 +2491,8 @@ function resetAllData(){
   Object.keys(DURATIONS).forEach(k=>delete DURATIONS[k]);
   coupons=[];
   memberHistory={};
+  memberSeq=0;
+  try{localStorage.removeItem('xgym_member_seq');}catch(e){}
   // Clear Supabase too
   if(_supabase){
     Promise.all([
@@ -2511,6 +2513,33 @@ function resetAllData(){
 // ===== LOAD DATA =====
 const _saved=lsLoad();
 let members=_saved.members||[];
+// ✅ عداد تسلسلي دائم لأرقام الأعضاء — لا يتكرر أبداً حتى بعد حذف أعضاء
+let memberSeq=parseInt(localStorage.getItem('xgym_member_seq'))||0;
+members.forEach(m=>{const n=parseInt((m.id||'').replace('XG-',''));if(!isNaN(n)&&n>memberSeq)memberSeq=n;});
+function saveMemberSeq(){try{localStorage.setItem('xgym_member_seq',String(memberSeq));}catch(e){}}
+// ✅ تنظيف تلقائي: إزالة أي عضو مكرر بنفس الـ ID (ناتج عن خلل قديم في الترقيم قبل هذا التحديث)
+(function dedupeMembersById(){
+  const seenAt=new Map();
+  const cleaned=[];
+  let removed=0;
+  members.forEach(m=>{
+    if(!m||!m.id){cleaned.push(m);return;}
+    if(seenAt.has(m.id)){
+      removed++;
+      const idx=seenAt.get(m.id);
+      // الاحتفاظ بالسجل الأحدث أو غير المؤرشف
+      if(cleaned[idx].archived&&!m.archived)cleaned[idx]=m;
+    }else{
+      seenAt.set(m.id,cleaned.length);
+      cleaned.push(m);
+    }
+  });
+  if(removed>0){
+    members=cleaned;
+    lsSave_local();
+    setTimeout(()=>showNotif&&showNotif('تم إصلاح '+removed+' عضو مكرر (خلل قديم في الترقيم)','warning'),1500);
+  }
+})();
 let transactions=_saved.transactions||{income:[],expense:[]};
 let attendance=_saved.attendance||[];
 let prices=_saved.prices||{...DEFAULT_PRICES};
@@ -2567,7 +2596,8 @@ function renderDashboard(){
   const totalRevEl=document.getElementById('total-revenue');
   if(totalRevEl){const rev=transactions.income.reduce((s,t)=>s+t.amount,0);totalRevEl.textContent=rev>=1000?(rev/1000).toFixed(1)+'k':rev;}
   const todayStr=new Date().toDateString();
-  const inCount=attendance.filter(a=>a.type==='in'&&new Date(a.time).toDateString()===todayStr).length;
+  const todayInRecs=attendance.filter(a=>a.type==='in'&&new Date(a.time).toDateString()===todayStr);
+  const inCount=new Set(todayInRecs.map(a=>a.id)).size;
   document.getElementById('today-attend').textContent=inCount;
   document.getElementById('today-count').textContent=inCount;
   const expiring=activeMembers.filter(m=>m.status==='active'&&m.days<=7);
@@ -3720,7 +3750,9 @@ function addMember(){
   const startDate=start?new Date(start):new Date();
   const endDate=new Date(startDate);
   endDate.setDate(endDate.getDate()+dur);
-  const num=String(members.length+1).padStart(4,'0');
+  memberSeq++;
+  saveMemberSeq();
+  const num=String(memberSeq).padStart(4,'0');
   const id='XG-'+num;
   const barcode='XGM'+num+phone.slice(-4);
   
