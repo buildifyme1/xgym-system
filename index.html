@@ -1849,6 +1849,9 @@ const DEFAULT_PRICE_NAMES={};
 let DURATIONS={};
 
 // ===== AUTH SYSTEM =====
+// لإيقاف دخول الأدمن مؤقتاً للتحديثات: غيّر القيمة إلى true
+// لإعادة فتح الدخول: رجّعها false
+const MAINTENANCE_MODE_ADMIN = true;
 const AUTH_KEY='xgym_auth_session';
 // Passwords stored as plain text for simplicity — change these!
 const USERS={
@@ -1928,6 +1931,16 @@ function doLogin(){
     errMsg.textContent='كلمة المرور غلط، حاول تاني';
     document.getElementById('login-password').value='';
     document.getElementById('login-password').focus();
+    return;
+  }
+  if(role==='admin' && MAINTENANCE_MODE_ADMIN){
+    errEl.style.display='block';
+    errEl.style.background='rgba(245,158,11,0.1)';
+    errEl.style.borderColor='rgba(245,158,11,0.3)';
+    errEl.style.color='var(--amber)';
+    errEl.querySelector('i').className='fas fa-screwdriver-wrench';
+    errMsg.textContent='النظام متوقف مؤقتاً للتحديثات، حاول لاحقاً';
+    document.getElementById('login-password').value='';
     return;
   }
   currentUser={role:user.role, label:user.label, avatar:user.avatar, username:role};
