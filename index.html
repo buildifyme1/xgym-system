@@ -1208,6 +1208,9 @@ body.role-receptionist .recep-hide{display:none!important}
           <option value="female">سيدات</option>
         </select>
         <button class="btn btn-gold" onclick="openAddMember()"><i class="fas fa-plus"></i>عضو جديد</button>
+        <button class="btn btn-outline btn-sm" onclick="bulkSyncMemberAuth()" title="تفعيل/تحديث دخول Member Portal لكل الأعضاء دفعة واحدة">
+          <i class="fas fa-mobile-screen-button"></i>تفعيل دخول كل الأعضاء
+        </button>
         <button class="btn btn-outline btn-sm" onclick="openArchivedModal()" title="الأعضاء المؤرشفون" style="position:relative">
           <i class="fas fa-archive"></i>الأرشيف
           <span id="archived-count-badge" style="display:none;position:absolute;top:-6px;left:-6px;background:var(--red);color:#fff;border-radius:50%;width:18px;height:18px;font-size:10px;font-weight:800;display:none;align-items:center;justify-content:center">0</span>
@@ -1696,6 +1699,7 @@ body.role-receptionist .recep-hide{display:none!important}
   <div class="modal" style="width:440px;text-align:center">
     <div class="close-btn" onclick="closeModal('member-barcode-modal')"><i class="fas fa-times"></i></div>
     <h3 style="margin-bottom:4px"><i class="fas fa-barcode" style="color:var(--gold);margin-left:8px"></i>باركود العضو</h3>
+    <div id="bc-member-photo" style="width:64px;height:64px;border-radius:50%;margin:0 auto 10px;overflow:hidden;background:var(--bg4);display:none;border:2px solid var(--border2)"></div>
     <div id="bc-member-name" style="color:var(--text2);font-size:13px;margin-bottom:4px"></div>
     <div id="bc-member-id" style="color:var(--text3);font-size:11px;margin-bottom:16px"></div>
 
@@ -1728,7 +1732,21 @@ body.role-receptionist .recep-hide{display:none!important}
       <button class="btn btn-sm" style="background:rgba(37,99,235,0.08);color:var(--gold);border:1px solid rgba(37,99,235,0.2)" onclick="sendBarcodeWhatsApp()"><i class="fas fa-comment-dots"></i>نص فقط واتساب</button>
       <button class="btn btn-outline btn-sm" onclick="closeModal('member-barcode-modal')">إغلاق</button>
     </div>
+
+    <!-- بيانات دخول Member Portal -->
+    <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);text-align:right">
+      <div style="font-size:12px;font-weight:800;color:var(--text2);margin-bottom:8px"><i class="fas fa-mobile-screen-button" style="color:var(--gold);margin-left:6px"></i>بيانات دخول صفحة العضو</div>
+      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+        <div style="font-size:12px;color:var(--text2)">
+          رقم العضوية: <b style="color:var(--text)" id="bc-portal-id"></b><br>
+          رقم الموبايل (بيستخدمه للدخول): <b style="color:var(--gold)" id="bc-portal-phone">—</b>
+          <div id="bc-portal-status" style="font-size:11px;margin-top:4px"></div>
+        </div>
+        <button class="btn btn-sm" style="background:rgba(37,99,235,0.1);color:var(--gold);border:1px solid rgba(37,99,235,0.25)" onclick="syncMemberAuthCredential(_currentBarcodeId).then(ok=>{if(ok)viewMember(_currentBarcodeId);})"><i class="fas fa-rotate"></i>مزامنة/تفعيل الدخول</button>
+      </div>
+    </div>
   </div>
+
 </div>
 
 <!-- MODAL: EDIT MEMBER -->
@@ -1849,9 +1867,6 @@ const DEFAULT_PRICE_NAMES={};
 let DURATIONS={};
 
 // ===== AUTH SYSTEM =====
-// لإيقاف دخول الأدمن مؤقتاً للتحديثات: غيّر القيمة إلى true
-// لإعادة فتح الدخول: رجّعها false
-const MAINTENANCE_MODE_ADMIN = true;
 const AUTH_KEY='xgym_auth_session';
 // Passwords stored as plain text for simplicity — change these!
 const USERS={
@@ -1931,16 +1946,6 @@ function doLogin(){
     errMsg.textContent='كلمة المرور غلط، حاول تاني';
     document.getElementById('login-password').value='';
     document.getElementById('login-password').focus();
-    return;
-  }
-  if(role==='admin' && MAINTENANCE_MODE_ADMIN){
-    errEl.style.display='block';
-    errEl.style.background='rgba(245,158,11,0.1)';
-    errEl.style.borderColor='rgba(245,158,11,0.3)';
-    errEl.style.color='var(--amber)';
-    errEl.querySelector('i').className='fas fa-screwdriver-wrench';
-    errMsg.textContent='النظام متوقف مؤقتاً للتحديثات، حاول لاحقاً';
-    document.getElementById('login-password').value='';
     return;
   }
   currentUser={role:user.role, label:user.label, avatar:user.avatar, username:role};
@@ -2055,6 +2060,124 @@ function changePassword(target){
 // ===== SUPABASE INTEGRATION =====
 const SB_URL_KEY='xgym_sb_url';
 const SB_KEY_KEY='xgym_sb_key';
+
+// ===== Member Portal: حسابات دخول الأعضاء (Supabase Auth) =====
+function getSbCreds(){
+  return {
+    url: localStorage.getItem(SB_URL_KEY) || 'https://hotheuohwywchcrydvxl.supabase.co',
+    key: localStorage.getItem(SB_KEY_KEY) || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhvdGhldW9od3l3Y2hjcnlkdnhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNTA0OTAsImV4cCI6MjA5NTYyNjQ5MH0.plhZ_0ihIw1T7w0gKrvyxAGkU6iyvFd0k6PsuPk7ovY'
+  };
+}
+// يشيل أي حروف غير أرقام من رقم الموبايل عشان يتطابق دايمًا بين
+// الإنشاء والدخول (مش مهم لو الأدمن كتبه بمسافات أو شرطات)
+function normalizePhone(phone){ return (phone||'').replace(/[^0-9]/g,''); }
+// يعرض صورة العضو (لو موجودة عبر Member Portal) بدل الحروف الأولى من الاسم
+function mAvatarInner(m){
+  if(m&&m.photo_url) return `<img src="${m.photo_url}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit" loading="lazy">`;
+  return m&&m.name?m.name.split(' ').map(w=>w[0]).join(''):'';
+}
+function memberAuthEmail(id){ return id.toLowerCase().replace(/[^a-z0-9]/g,'')+'@xgym-members.app'; }
+// بيستخدم عميل Supabase مؤقت ومنفصل (persistSession:false) عشان signUp ما يبدلش جلسة الأدمن الحالية
+// بيرجع {uid, error} — error بيوضح السبب الحقيقي (زي مشاكل إرسال إيميل التأكيد)
+async function createMemberAuthAccount(memberId,phonePassword){
+  try{
+    if((phonePassword||'').length<6){return {uid:null,error:'رقم الموبايل قصير جدًا (لازم 6 أرقام على الأقل)'};}
+    const {url,key}=getSbCreds();
+    const tempClient=supabase.createClient(url,key,{auth:{persistSession:false,autoRefreshToken:false}});
+    const email=memberAuthEmail(memberId);
+    const {data,error}=await tempClient.auth.signUp({email,password:phonePassword});
+    if(error){console.warn('member auth signup error:',error);return {uid:null,error:error.message||String(error)};}
+    return {uid:(data&&data.user&&data.user.id)||null,error:null};
+  }catch(e){console.warn('createMemberAuthAccount exception:',e);return {uid:null,error:e.message||String(e)};}
+}
+// إصلاح/ربط حساب Auth موجود بالفعل لنفس الإيميل (لو اتعمله signUp قبل كده ووقعت مزامنة
+// ضاع فيها user_id)، أو تحديث كلمة الدخول بعد تعديل رقم الموبايل — من غير إرسال أي إيميل
+async function linkOrResetMemberAuth(memberId,phonePassword){
+  if(!_supabase)return null;
+  try{
+    const {data,error}=await _supabase.rpc('link_or_reset_member_auth',{p_member_id:memberId,p_new_pin:phonePassword});
+    if(error){console.warn('link_or_reset_member_auth error:',error);return null;}
+    return data||null; // uuid أو null لو مفيش حساب Auth أصلاً لسه
+  }catch(e){console.warn('linkOrResetMemberAuth exception:',e);return null;}
+}
+// مزامنة/تفعيل دخول كل الأعضاء دفعة واحدة (للحسابات القديمة اللي اتعملت
+// قبل التحديثات، أو وهي لسه "Confirm email" شغالة، إلخ) — بتشتغل بالتتابع
+// مع تأخير بسيط بين كل عضو والتاني عشان متضربش أي حدود على Supabase
+async function bulkSyncMemberAuth(){
+  if(!_supabase){showNotif('فعّل الربط مع Supabase أولاً','warning');return;}
+  const list=members.filter(m=>!m.archived);
+  if(!list.length){showNotif('لا يوجد أعضاء لمزامنتهم','warning');return;}
+  if(!confirm('هيتم تفعيل/تحديث دخول '+list.length+' عضو في صفحة الأعضاء. العملية قد تستغرق دقيقة أو أكتر حسب عدد الأعضاء. متابعة؟'))return;
+
+  showNotif('جاري تفعيل دخول الأعضاء... (0/'+list.length+')','warning');
+  let ok=0;
+  const failures=[];
+  for(let i=0;i<list.length;i++){
+    const m=list[i];
+    try{
+      const res=await syncMemberAuthCredentialSilent(m.id);
+      if(res.ok)ok++; else failures.push({id:m.id,name:m.name,error:res.error||'خطأ غير معروف'});
+    }catch(e){failures.push({id:m.id,name:m.name,error:e.message||String(e)});}
+    if(i%5===0||i===list.length-1){
+      showNotif('جاري التفعيل... ('+(i+1)+'/'+list.length+') — نجح: '+ok+' | فشل: '+failures.length,'warning');
+    }
+    await new Promise(r=>setTimeout(r,350)); // تأخير بسيط بين كل عضو والتاني
+  }
+  showNotif('اكتملت المزامنة — نجح: '+ok+' | فشل: '+failures.length+' من إجمالي '+list.length,'success');
+  sbPushMembers();
+  renderMembers();
+  if(failures.length){
+    console.table(failures);
+    const sample=failures.slice(0,15).map(f=>'• '+f.id+' ('+f.name+'): '+f.error).join('\n');
+    alert('فشلت مزامنة '+failures.length+' عضو. أمثلة على الأسباب:\n\n'+sample+
+      (failures.length>15?'\n\n...ولمزيد من التفاصيل الكاملة، افتح Console (F12) في المتصفح.':'\n\nالتفاصيل الكاملة موجودة في Console (F12) في المتصفح.'));
+  }
+}
+// نفس syncMemberAuthCredential بس بترجع {ok,error} من غير إشعارات فردية
+// (مستخدمة داخل bulkSyncMemberAuth عشان نقدر نجمع كل الأسباب في الآخر)
+async function syncMemberAuthCredentialSilent(memberId){
+  const m=members.find(x=>x.id===memberId);
+  if(!m)return {ok:false,error:'العضو غير موجود'};
+  const pass=normalizePhone(m.phone);
+  if(pass.length<6)return {ok:false,error:'رقم الموبايل المسجل قصير جدًا ('+pass.length+' أرقام، لازم 6 على الأقل)'};
+  try{
+    let uid=await linkOrResetMemberAuth(memberId,pass);
+    if(!uid){
+      const res=await createMemberAuthAccount(memberId,pass);
+      uid=res.uid;
+      if(!uid)return {ok:false,error:res.error||'فشل إنشاء حساب الدخول'};
+    }
+    m.user_id=uid;
+    delete m.pin;
+    lsSave();
+    return {ok:true,error:null};
+  }catch(e){console.warn('syncMemberAuthCredentialSilent error for '+memberId,e);return {ok:false,error:e.message||String(e)};}
+}
+// مزامنة/تفعيل دخول العضو (رقم العضوية + رقم الموبايل الحالي) — بتتنادى تلقائيًا
+// عند إضافة عضو جديد أو تعديل رقم موبايله، وبردو متاحة يدويًا من نافذة تفاصيل العضو
+async function syncMemberAuthCredential(memberId){
+  if(!_supabase){showNotif('فعّل الربط مع Supabase أولاً','warning');return false;}
+  const m=members.find(x=>x.id===memberId);
+  if(!m){return false;}
+  const pass=normalizePhone(m.phone);
+  try{
+    let uid=await linkOrResetMemberAuth(memberId,pass);
+    if(!uid){
+      const res=await createMemberAuthAccount(memberId,pass);
+      uid=res.uid;
+      if(!uid){
+        showNotif('تعذر تفعيل دخول العضو: '+(res.error||'خطأ غير معروف'),'warning');
+        return false;
+      }
+    }
+    m.user_id=uid;
+    delete m.pin;
+    lsSave();
+    sbPushMembers();
+    showNotif('تم تفعيل/تحديث دخول العضو بنجاح','success');
+    return true;
+  }catch(e){showNotif('حدث خطأ أثناء تفعيل الدخول: '+(e.message||e),'warning');console.warn(e);return false;}
+}
 let _supabase=null;
 let _pricesChannel=null;
 
@@ -2172,7 +2295,7 @@ async function sbPushMembers(){
   try{
     if(!members.length)return;
     // upsert فقط بدون delete — آمن ضد فقد البيانات
-    const rows=members.map(m=>({id:m.id, data:m, updated_at:new Date().toISOString()}));
+    const rows=members.map(m=>({id:m.id, data:m, user_id:m.user_id||null, photo_url:m.photo_url||null, updated_at:new Date().toISOString()}));
     const {error}=await _supabase.from('xgym_members').upsert(rows,{onConflict:'id'});
     if(error)throw error;
     // حذف الأعضاء المؤرشفين/المحذوفين من Supabase (اللي مش موجودين في members[])
@@ -2299,7 +2422,7 @@ async function sbPullAll(force=false){
   try{
     // جلب كل الجداول بالتوازي
     const [mRes,aRes,tRes,pRes,cRes,hRes,sRes]=await Promise.all([
-      _supabase.from('xgym_members').select('data'),
+      _supabase.from('xgym_members').select('data,user_id,photo_url'),
       _supabase.from('xgym_attendance').select('*').order('time',{ascending:false}).limit(500),
       _supabase.from('xgym_transactions').select('*').order('id',{ascending:false}),
       _supabase.from('xgym_prices').select('*'),
@@ -2310,7 +2433,7 @@ async function sbPullAll(force=false){
 
     // الأعضاء — حماية: لو Supabase فاضي ومحلي فيه بيانات، نحافظ على المحلي
     if(mRes.data&&mRes.data.length){
-      members=mRes.data.map(r=>r.data);
+      members=mRes.data.map(r=>({...r.data, user_id:r.user_id||r.data.user_id||null, photo_url:r.photo_url||r.data.photo_url||null}));
     } else if(!mRes.data||mRes.data.length===0){
       // Supabase فاضي — نحمّل من localStorage كـ fallback
       const localMembers=JSON.parse(localStorage.getItem(LS_KEYS.members)||'[]');
@@ -2755,7 +2878,7 @@ function switchExpiringTab(tab){
     const pct=Math.max(0,Math.min(100,m.days/30*100));
     return `<div style="display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:12px;background:${bgColor};margin-bottom:10px;border:1px solid ${borderColor};transition:.2s">
       <!-- الرقم -->
-      <div class="mc-avatar" style="background:${AVATAR_COLORS[m.ci%5]};color:${AVATAR_TEXT[m.ci%5]};width:42px;height:42px;font-size:13px;flex-shrink:0">${m.name.split(' ').map(w=>w[0]).join('')}</div>
+      <div class="mc-avatar" style="background:${AVATAR_COLORS[m.ci%5]};color:${AVATAR_TEXT[m.ci%5]};width:42px;height:42px;font-size:13px;flex-shrink:0">${mAvatarInner(m)}</div>
       <!-- البيانات -->
       <div style="flex:1;min-width:0">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
@@ -2898,7 +3021,7 @@ function renderMemberCard(m){
   const stClass={active:'active',expired:'expired',frozen:'frozen',pending:'pending'};
   return`<div class="member-card" onclick="viewMember('${m.id}')">
     <div class="mc-top">
-      <div class="mc-avatar" style="background:${AVATAR_COLORS[m.ci]};color:${AVATAR_TEXT[m.ci]}">${m.name.split(' ').map(w=>w[0]).join('')}</div>
+      <div class="mc-avatar" style="background:${AVATAR_COLORS[m.ci]};color:${AVATAR_TEXT[m.ci]}">${mAvatarInner(m)}</div>
       <div style="flex:1">
         <div class="mc-name">${m.name} <span style="font-size:10px;color:var(--text3);margin-right:4px">${m.gender==='female'?'👩':'👨'}</span></div>
         <div class="mc-id">${m.id}${m.discountAmount>0?` <span style="font-size:9px;background:rgba(37,99,235,0.12);color:var(--red);padding:1px 5px;border-radius:4px;margin-right:4px">خصم ${m.discountAmount.toLocaleString()} ج</span>`:''}
@@ -3526,7 +3649,7 @@ function renderReports(){
   document.getElementById('top-members-list').innerHTML=topList.length?topList.map((m,i)=>`
     <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);${i===topList.length-1?'border:none':''}">
       <div style="font-size:16px;width:24px;text-align:center">${i<3?medals[i]:`<span style='font-size:12px;color:var(--text3);font-weight:700'>${i+1}</span>`}</div>
-      <div class="att-avatar" style="background:${AVATAR_COLORS[m.ci%5]};color:${AVATAR_TEXT[m.ci%5]};width:32px;height:32px;font-size:11px">${m.name.split(' ').map(w=>w[0]).join('')}</div>
+      <div class="att-avatar" style="background:${AVATAR_COLORS[m.ci%5]};color:${AVATAR_TEXT[m.ci%5]};width:32px;height:32px;font-size:11px">${mAvatarInner(m)}</div>
       <div style="flex:1;min-width:0">
         <div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${m.name}</div>
         <div style="height:4px;background:var(--bg4);border-radius:2px;margin-top:5px;overflow:hidden">
@@ -3548,7 +3671,7 @@ function renderReports(){
     const risk=isAbsent?'var(--red)':'var(--amber)';
     return `<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);${i===absentList.length-1?'border:none':''}">
       <div style="width:24px;text-align:center;font-size:12px;color:${risk};font-weight:700">${i+1}</div>
-      <div class="att-avatar" style="background:${AVATAR_COLORS[m.ci%5]};color:${AVATAR_TEXT[m.ci%5]};width:32px;height:32px;font-size:11px">${m.name.split(' ').map(w=>w[0]).join('')}</div>
+      <div class="att-avatar" style="background:${AVATAR_COLORS[m.ci%5]};color:${AVATAR_TEXT[m.ci%5]};width:32px;height:32px;font-size:11px">${mAvatarInner(m)}</div>
       <div style="flex:1;min-width:0">
         <div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${m.name}</div>
         <div style="margin-top:3px"><span style="background:${isAbsent?'rgba(239,68,68,0.12)':'rgba(245,158,11,0.12)'};color:${risk};padding:1px 7px;border-radius:4px;font-size:10px;font-weight:700">${isAbsent?'غائب تماماً':'أقل من المتوسط'}</span></div>
@@ -3749,7 +3872,7 @@ function calcFinalPrice(type){
   return originalPrice;
 }
 
-function addMember(){
+async function addMember(){
   const fn=document.getElementById('new-fname').value.trim();
   const ln=document.getElementById('new-lname').value.trim();
   const phone=document.getElementById('new-phone').value.trim();
@@ -3783,9 +3906,18 @@ function addMember(){
     days:dur,ci:members.length%5,gender,barcode,
     paidAmount:finalPrice,
     discountAmount:discountAmount,
-    discountType:discType!=='none'?discType:null
+    discountType:discType!=='none'?discType:null,
+    user_id:null,photo_url:null
   };
   members.push(newMember);
+  // إنشاء حساب دخول للعضو في Member Portal (Supabase Auth) — بيستخدم رقم موبايله
+  // كـ"كلمة مرور"، يعمل في الخلفية بدون تعطيل الحفظ
+  if(_supabase){
+    createMemberAuthAccount(id,normalizePhone(phone)).then(res=>{
+      if(res.uid){newMember.user_id=res.uid;lsSave();sbPushMembers();}
+      else if(res.error){console.warn('تعذر إنشاء حساب دخول العضو '+id+':',res.error);}
+    });
+  }
   
   // تسجيل المعاملة المالية بالسعر الفعلي المدفوع
   const incomeNote=fn+(ln?' '+ln:'')+(discountAmount>0?' (خصم '+discountAmount.toLocaleString()+' ج)':'');
@@ -3995,6 +4127,7 @@ function saveEditMember(){
   const ln=document.getElementById('edit-lname').value.trim();
   const phone=document.getElementById('edit-phone').value.trim();
   if(!fn||!phone){showNotif('الاسم والهاتف مطلوبان','warning');return;}
+  const phoneChanged=normalizePhone(m.phone)!==normalizePhone(phone);
   m.name=fn+(ln?' '+ln:'');
   m.phone=phone;
   m.gender=document.getElementById('edit-gender').value;
@@ -4010,6 +4143,9 @@ function saveEditMember(){
   lsSave();
   closeModal('edit-member-modal');
   showNotif('تم تحديث بيانات: '+m.name,'success');
+  if(phoneChanged&&_supabase){
+    syncMemberAuthCredential(id); // يحدّث كلمة دخول العضو لتطابق رقم موبايله الجديد
+  }
   autoRefresh();
   renderMembers();
   if(document.getElementById('page-subscriptions').classList.contains('active'))renderSubscriptions();
@@ -4068,7 +4204,7 @@ function renderArchivedMembers(){
     return;
   }
   container.innerHTML=archived.map(m=>`<div style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:10px;background:var(--bg3);border:1px solid var(--border);margin-bottom:8px">
-    <div class="mc-avatar" style="background:${AVATAR_COLORS[m.ci%5]};color:${AVATAR_TEXT[m.ci%5]};width:40px;height:40px;font-size:13px;opacity:.7">${m.name.split(' ').map(w=>w[0]).join('')}</div>
+    <div class="mc-avatar" style="background:${AVATAR_COLORS[m.ci%5]};color:${AVATAR_TEXT[m.ci%5]};width:40px;height:40px;font-size:13px;opacity:.7">${mAvatarInner(m)}</div>
     <div style="flex:1">
       <div style="font-size:14px;font-weight:700;color:var(--text2)">${m.name}</div>
       <div style="font-size:11px;color:var(--text3)">${m.id} · ${priceNames[m.type]||m.type} · ${m.phone}</div>
@@ -4261,6 +4397,14 @@ function viewMember(id){
   document.getElementById('bc-card-name').textContent=m.name;
   document.getElementById('bc-card-sub').textContent=(priceNames[m.type]||m.type)+' | '+m.id;
   document.getElementById('bc-card-dates').textContent='من: '+m.start+'  ←  حتى: '+m.end;
+  document.getElementById('bc-portal-id').textContent=m.id;
+  document.getElementById('bc-portal-phone').textContent=m.phone||'—';
+  document.getElementById('bc-portal-status').innerHTML=m.user_id
+    ? '<span style="color:var(--green)"><i class="fas fa-circle-check"></i> دخوله مفعّل</span>'
+    : '<span style="color:var(--amber)"><i class="fas fa-triangle-exclamation"></i> لسه محتاج تفعيل — اضغط مزامنة</span>';
+  const photoBox=document.getElementById('bc-member-photo');
+  if(m.photo_url){photoBox.style.display='block';photoBox.innerHTML=`<img src="${m.photo_url}" style="width:100%;height:100%;object-fit:cover">`;}
+  else{photoBox.style.display='none';photoBox.innerHTML='';}
   // رسم الباركود على canvas
   try{
     JsBarcode('#member-barcode-svg',bc,{
@@ -4560,7 +4704,7 @@ function quickSearch(val){
     ).slice(0,5);
     results.innerHTML=matches.map(m=>`
       <div onclick="selectManualMember('${m.id}')" style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;background:var(--bg3);border:1px solid var(--border);margin-bottom:6px;cursor:pointer" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--border)'">
-        <div class="att-avatar" style="background:${AVATAR_COLORS[m.ci%5]};color:${AVATAR_TEXT[m.ci%5]};width:30px;height:30px;font-size:10px">${m.name.split(' ').map(w=>w[0]).join('')}</div>
+        <div class="att-avatar" style="background:${AVATAR_COLORS[m.ci%5]};color:${AVATAR_TEXT[m.ci%5]};width:30px;height:30px;font-size:10px">${mAvatarInner(m)}</div>
         <div style="flex:1">
           <div style="font-size:12px;font-weight:700">${m.name}</div>
           <div style="font-size:10px;color:var(--text3)">${m.id} · ${priceNames[m.type]||m.type}</div>
@@ -4633,7 +4777,7 @@ function _recordAttendance(m){
     const lastTime=new Date(todayRecords[0].time).toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});
     resultEl.innerHTML=`
       <div style="display:flex;align-items:center;gap:14px;animation:slideIn .3s ease">
-        <div class="att-avatar" style="background:${AVATAR_COLORS[m.ci%5]};color:${AVATAR_TEXT[m.ci%5]};width:50px;height:50px;font-size:17px">${m.name.split(' ').map(w=>w[0]).join('')}</div>
+        <div class="att-avatar" style="background:${AVATAR_COLORS[m.ci%5]};color:${AVATAR_TEXT[m.ci%5]};width:50px;height:50px;font-size:17px">${mAvatarInner(m)}</div>
         <div style="flex:1">
           <div style="font-size:15px;font-weight:800">${m.name}</div>
           <div style="font-size:11px;color:var(--text3);margin-top:2px">${m.id} · ${priceNames[m.type]||m.type}</div>
@@ -4655,7 +4799,7 @@ function _recordAttendance(m){
     const resultEl=document.getElementById('scan-result');
     resultEl.innerHTML=`
       <div style="display:flex;align-items:center;gap:14px;animation:slideIn .3s ease">
-        <div class="att-avatar" style="background:#ff4444;color:#fff;width:50px;height:50px;font-size:17px">${m.name.split(' ').map(w=>w[0]).join('')}</div>
+        <div class="att-avatar" style="background:#ff4444;color:#fff;width:50px;height:50px;font-size:17px">${mAvatarInner(m)}</div>
         <div style="flex:1">
           <div style="font-size:15px;font-weight:800">${m.name}</div>
           <div style="font-size:11px;color:var(--text3);margin-top:2px">${m.id} · ${priceNames[m.type]||m.type}</div>
@@ -4693,7 +4837,7 @@ function _recordAttendance(m){
   resultEl.innerHTML=`
     <div style="background:${bgColor};border:1.5px solid ${borderColor};border-radius:14px;padding:14px 16px;animation:slideIn .3s ease">
       <div style="display:flex;align-items:center;gap:12px">
-        <div class="att-avatar" style="background:${AVATAR_COLORS[m.ci%5]};color:${AVATAR_TEXT[m.ci%5]};width:52px;height:52px;font-size:18px;flex-shrink:0">${m.name.split(' ').map(w=>w[0]).join('')}</div>
+        <div class="att-avatar" style="background:${AVATAR_COLORS[m.ci%5]};color:${AVATAR_TEXT[m.ci%5]};width:52px;height:52px;font-size:18px;flex-shrink:0">${mAvatarInner(m)}</div>
         <div style="flex:1;min-width:0">
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
             <span style="font-size:16px;font-weight:900">${m.name}</span>
@@ -4864,7 +5008,7 @@ function switchExpTab(days){
     const urgencyBg=m.days===0?'rgba(239,68,68,0.12)':m.days<=2?'rgba(239,68,68,0.08)':'rgba(245,158,11,0.08)';
     const daysLabel=m.days===0?'انتهى اليوم':m.days===1?'ينتهي غداً':`ينتهي خلال ${m.days} يوم`;
     return `<div style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:12px;background:${urgencyBg};margin-bottom:8px;border:1px solid ${m.days<=2?'rgba(239,68,68,0.2)':'rgba(245,158,11,0.15)'}">
-      <div class="mc-avatar" style="background:${AVATAR_COLORS[m.ci%5]};color:${AVATAR_TEXT[m.ci%5]};width:40px;height:40px;font-size:13px;flex-shrink:0">${m.name.split(' ').map(w=>w[0]).join('')}</div>
+      <div class="mc-avatar" style="background:${AVATAR_COLORS[m.ci%5]};color:${AVATAR_TEXT[m.ci%5]};width:40px;height:40px;font-size:13px;flex-shrink:0">${mAvatarInner(m)}</div>
       <div style="flex:1;min-width:0">
         <div style="font-size:14px;font-weight:700;margin-bottom:2px">${m.name}</div>
         <div style="font-size:11px;color:var(--text3)">${m.id} · ${priceNames[m.type]||m.type}</div>
@@ -4902,7 +5046,7 @@ function doGlobalSearch(q){
     const stAr={active:'نشط',expired:'منتهي',frozen:'مجمد',pending:'معلق'};
     const visits=attendance.filter(a=>a.id===m.id&&a.type==='in').length;
     return`<div style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:10px;cursor:pointer;transition:.2s;border:1px solid transparent" onmouseover="this.style.background='var(--bg3)';this.style.borderColor='var(--border)'" onmouseout="this.style.background='';this.style.borderColor='transparent'" onclick="closeGlobalSearch();setTimeout(()=>openEditMember('${m.id}'),200)">
-      <div class="mc-avatar" style="background:${AVATAR_COLORS[m.ci%5]};color:${AVATAR_TEXT[m.ci%5]};width:44px;height:44px;font-size:14px;flex-shrink:0">${m.name.split(' ').map(w=>w[0]).join('')}</div>
+      <div class="mc-avatar" style="background:${AVATAR_COLORS[m.ci%5]};color:${AVATAR_TEXT[m.ci%5]};width:44px;height:44px;font-size:14px;flex-shrink:0">${mAvatarInner(m)}</div>
       <div style="flex:1;min-width:0">
         <div style="font-size:14px;font-weight:700;margin-bottom:2px">${m.name}</div>
         <div style="font-size:11px;color:var(--text3)">${m.id} · ${m.phone} · ${priceNames[m.type]||m.type}</div>
@@ -5134,7 +5278,7 @@ function renderBulkRecipients(){
     const checked=_selectedMembers.has(m.id)?'checked':'';
     return `<div onclick="toggleMember('${m.id}',this)" style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--border);${i===list.length-1?'border:none':''};cursor:pointer;transition:background .15s" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">
       <input type="checkbox" id="chk-${m.id}" ${checked} onclick="event.stopPropagation();toggleMember('${m.id}',this.closest('div'))" style="width:15px;height:15px;accent-color:var(--gold);cursor:pointer;flex-shrink:0">
-      <div style="width:28px;height:28px;border-radius:8px;background:${AVATAR_COLORS[m.ci%5]};color:${AVATAR_TEXT[m.ci%5]};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">${m.name.split(' ').map(w=>w[0]).join('')}</div>
+      <div style="width:28px;height:28px;border-radius:8px;background:${AVATAR_COLORS[m.ci%5]};color:${AVATAR_TEXT[m.ci%5]};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">${mAvatarInner(m)}</div>
       <div style="flex:1;min-width:0">
         <div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${m.name}</div>
         <div style="font-size:10px;color:var(--text3)">${m.phone||'لا يوجد رقم'}</div>
