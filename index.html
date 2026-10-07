@@ -375,6 +375,8 @@ body.light-mode .skeleton::after{background:linear-gradient(90deg,transparent,rg
 .trans-amount.expense{color:var(--red);font-weight:700}
 .trans-del-btn{background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);color:var(--red);width:30px;height:30px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;margin-right:10px;transition:var(--transition)}
 .trans-del-btn:hover{background:var(--red);color:#fff}
+@keyframes rfspin{to{transform:rotate(360deg)}}
+#refresh-btn.spinning i{animation:rfspin .8s linear infinite}
 
 /* MODAL */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:999;display:none;align-items:center;justify-content:center;backdrop-filter:blur(8px);animation:overlayIn .2s ease both}
@@ -814,7 +816,7 @@ body.role-receptionist .recep-hide{display:none!important}
       </div>
       <div class="form-group">
         <label class="form-label"><i class="fas fa-building" style="margin-left:6px;color:var(--gold)"></i>اسم الجيم</label>
-        <input class="form-input" id="setup-gymname" placeholder="مثال: GymCore" oninput="document.getElementById('setup-gymname-preview').textContent=this.value||'GymCore'">
+        <input class="form-input" id="setup-gymname" placeholder="مثال: GymCore" oninput="var _p=document.getElementById('setup-gymname-preview');if(_p)_p.textContent=this.value||'GymCore'">
       </div>
       <div class="form-group">
         <label class="form-label"><i class="fas fa-crown" style="margin-left:6px;color:var(--gold)"></i>كلمة مرور المدير</label>
@@ -930,6 +932,7 @@ body.role-receptionist .recep-hide{display:none!important}
     <div class="topbar-right">
       <div class="topbar-date"><i class="fas fa-calendar-alt"></i><span id="date-display"></span></div>
       <span id="save-indicator" style="font-size:11px;font-weight:700;min-width:60px;text-align:center"></span>
+      <div class="topbar-btn" id="refresh-btn" onclick="manualRefresh()" title="تحديث البيانات" style="position:relative"><i class="fas fa-rotate" id="refresh-icon"></i><span id="sync-dot" style="position:absolute;top:3px;left:3px;width:8px;height:8px;border-radius:50%;background:var(--green);display:none;border:1.5px solid var(--bg2)"></span></div>
       <div class="topbar-btn" id="theme-toggle-btn" onclick="toggleTheme()" title="تبديل الوضع المظلم/الفاتح"><i class="fas fa-moon" id="theme-icon"></i></div>
       <div class="topbar-btn" id="fs-btn" onclick="toggleFullscreen()" title="ملء الشاشة"><i class="fas fa-expand" id="fs-icon"></i></div>
       <div class="topbar-btn" id="pwa-install-btn" onclick="installPWA()" title="تثبيت كتطبيق" style="display:none;background:linear-gradient(135deg,rgba(37,99,235,0.15),rgba(37,99,235,0.05));border-color:rgba(37,99,235,0.3);color:var(--gold)"><i class="fas fa-download"></i></div>
@@ -1526,7 +1529,7 @@ body.role-receptionist .recep-hide{display:none!important}
       </div>
       <div class="card">
         <div class="card-header"><div class="card-title"><i class="fas fa-clock" style="color:var(--gold);margin-left:6px"></i>أوقات العمل</div></div>
-        <div class="form-row" style="margin-bottom:14px"><div><label class="form-label">يفتح الساعة</label><input class="form-input" type="time" value="06:00"></div><div><label class="form-label">يغلق الساعة</label><input class="form-input" type="time" value="24:00"></div></div>
+        <div class="form-row" style="margin-bottom:14px"><div><label class="form-label">يفتح الساعة</label><input class="form-input" type="time" value="06:00"></div><div><label class="form-label">يغلق الساعة</label><input class="form-input" type="time" value="23:59"></div></div>
         <div class="setting-item"><div class="setting-info"><h4>الدخول مرة واحدة يومياً</h4><p>منع دخول العضو أكثر من مرة في اليوم</p></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
         <div class="setting-item"><div class="setting-info"><h4>الجمعة إجازة</h4><p>إغلاق الجيم يوم الجمعة</p></div><div class="toggle" onclick="this.classList.toggle('on')"></div></div>
       </div>
@@ -2325,7 +2328,7 @@ async function sbConnect(){
 // لا يوجد "حذف الكل وإعادة الإدراج" بعد الآن، فجهاز قديم لا يمكنه مسح بيانات جهاز آخر.
 const _snap={};              // آخر حالة معروفة على السيرفر (باقات/كوبونات/إعدادات)
 const _memberSnap={};        // آخر نسخة معروفة لكل عضو على السيرفر
-let _sbSyncRunning=false,_sbSyncAgain=false,_sbBusy=0,_pulledOnce=false,_sbWarned=false;
+let _sbSyncRunning=false,_sbSyncAgain=false,_sbBusy=0,_pulledOnce=false,_sbWarned=false,_lastPullAt=0;
 
 function _newUid(){return 'u'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);}
 function _sbReportErr(where,e){
@@ -2641,6 +2644,7 @@ async function sbPullAll(force=false){
     }
 
     _pulledOnce=true;
+    _lastPullAt=Date.now();
     lsSave_local();
 
     const hasData=members.length>0||attendance.length>0||
@@ -2701,12 +2705,81 @@ async function sbSyncNow(){
     await sbPullAll(true);
     if(_dataSig()!==before)_refreshActivePage();
   }catch(e){console.warn('sbSyncNow error:',e);}
-  finally{_syncNowBusy=false;}
+  finally{_syncNowBusy=false;_updateSyncDot();}
+}
+
+// ---------- مراقب الحضور السريع: يفحص كل 4 ثواني لو فيه تغيير على السيرفر ويسحب فوراً ----------
+let _attSrvSig=null,_attWatchBusy=false;
+async function sbWatchAttendance(){
+  if(!_supabase||_attWatchBusy||document.hidden||_sbSyncRunning||_syncNowBusy||_sbBusy>0)return;
+  _attWatchBusy=true;
+  try{
+    const {data,error,count}=await _supabase.from('xgym_attendance').select('id,uid,time',{count:'exact'}).order('time',{ascending:false}).limit(1);
+    if(error)return;
+    const sig=count+'|'+((data&&data[0]&&(data[0].uid||data[0].id))||'');
+    if(_attSrvSig===null){_attSrvSig=sig;return;}
+    if(sig!==_attSrvSig){
+      const t0=Date.now();
+      await sbSyncNow();
+      if(_lastPullAt>=t0)_attSrvSig=sig; // لو السحب اتأجل نعيد المحاولة في الدورة الجاية
+    }
+  }catch(e){console.warn('sbWatchAttendance error:',e);}
+  finally{_attWatchBusy=false;}
+}
+
+// نقطة حالة المزامنة جنب زرار التحديث
+function _updateSyncDot(){
+  const d=document.getElementById('sync-dot'),b=document.getElementById('refresh-btn');
+  if(!d)return;
+  if(!_supabase){d.style.display='none';if(b)b.title='تحديث العرض (غير متصل بالسحابة)';return;}
+  const ok=_lastPullAt&&(Date.now()-_lastPullAt)<45000;
+  d.style.display='block';
+  d.style.background=ok?'var(--green)':'var(--red)';
+  if(b)b.title=ok?'تحديث البيانات — المزامنة شغالة تلقائياً':'تحديث البيانات — آخر مزامنة متأخرة، اضغط للتحديث';
+}
+
+// زرار التحديث من جوا البرنامج (بدون خروج/دخول) — دمج آمن ما بيمسحش أي حاجة لسه ما اترفعتش
+async function manualRefresh(){
+  const btn=document.getElementById('refresh-btn');
+  if(btn&&btn.classList.contains('spinning'))return;
+  if(btn)btn.classList.add('spinning');
+  const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+  try{
+    if(!_supabase){
+      _refreshActivePage();
+      showNotif('تم تحديث العرض — غير متصل بالسحابة','warning');
+      return;
+    }
+    for(let i=0;i<25&&(_sbSyncRunning||_syncNowBusy||_sbBusy>0);i++)await sleep(150);
+    await sbPushAll();
+    const t0=Date.now();
+    let ok=false;
+    for(let i=0;i<3&&!ok;i++){
+      await sbPullAll(true);
+      ok=_lastPullAt>=t0;
+      if(!ok)await sleep(500);
+    }
+    if(ok){
+      _attSrvSig=null;
+      _refreshActivePage();
+      showNotif('تم تحديث البيانات ✅','success');
+    }else{
+      showNotif('تعذر التحديث من السحابة — تأكد من الاتصال بالإنترنت','warning');
+    }
+  }catch(e){
+    console.warn('manualRefresh error:',e);
+    showNotif('تعذر التحديث','warning');
+  }finally{
+    if(btn)btn.classList.remove('spinning');
+    _updateSyncDot();
+  }
 }
 function sbStartAutoSync(){
   if(window._sbAutoSyncStarted)return;
   window._sbAutoSyncStarted=true;
   setInterval(()=>{if(!document.hidden)sbSyncNow();},12000);
+  setInterval(sbWatchAttendance,4000);
+  setInterval(_updateSyncDot,5000);
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)sbSyncNow();});
   window.addEventListener('online',()=>sbSyncNow());
   window.addEventListener('focus',()=>sbSyncNow());
