@@ -373,6 +373,8 @@ body.light-mode .skeleton::after{background:linear-gradient(90deg,transparent,rg
 .trans-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
 .trans-amount.income{color:var(--green);font-weight:700}
 .trans-amount.expense{color:var(--red);font-weight:700}
+.trans-del-btn{background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);color:var(--red);width:30px;height:30px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;margin-right:10px;transition:var(--transition)}
+.trans-del-btn:hover{background:var(--red);color:#fff}
 
 /* MODAL */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:999;display:none;align-items:center;justify-content:center;backdrop-filter:blur(8px);animation:overlayIn .2s ease both}
@@ -3683,12 +3685,14 @@ function renderFinanceDaily(){
     <div class="trans-icon" style="background:rgba(46,204,113,0.1);color:var(--green)"><i class="fas ${Object.keys(incIcons).find(k=>t.type.includes(k))?incIcons[Object.keys(incIcons).find(k=>t.type.includes(k))]:'fa-coins'}"></i></div>
     <div style="flex:1;padding:0 10px"><div style="font-size:13px;font-weight:700">${t.type}</div><div style="font-size:11px;color:var(--text3)">${t.date} ${t.note?'• '+t.note:''}</div></div>
     <div class="trans-amount income">+${t.amount.toLocaleString()} ج</div>
+    <button class="trans-del-btn" onclick="deleteTransaction('income',${transactions.income.indexOf(t)})" title="حذف" aria-label="حذف"><i class="fas fa-trash"></i></button>
   </div>`).join(''):`<div class="trans-empty"><i class="fas fa-inbox"></i>لا يوجد دخل مسجل في هذا اليوم</div>`;
 
   document.getElementById('expense-list').innerHTML=dayExpense.length?dayExpense.map((t,i)=>`<div class="trans-item" style="animation-delay:${i*.03}s">
     <div class="trans-icon" style="background:rgba(239,68,68,0.1);color:var(--red)"><i class="fas ${Object.keys(expIcons).find(k=>t.type.includes(k))?expIcons[Object.keys(expIcons).find(k=>t.type.includes(k))]:'fa-receipt'}"></i></div>
     <div style="flex:1;padding:0 10px"><div style="font-size:13px;font-weight:700">${t.type}</div><div style="font-size:11px;color:var(--text3)">${t.date} ${t.note?'• '+t.note:''}</div></div>
     <div class="trans-amount expense">-${t.amount.toLocaleString()} ج</div>
+    <button class="trans-del-btn" onclick="deleteTransaction('expense',${transactions.expense.indexOf(t)})" title="حذف" aria-label="حذف"><i class="fas fa-trash"></i></button>
   </div>`).join(''):`<div class="trans-empty"><i class="fas fa-inbox"></i>لا يوجد مصروفات مسجلة في هذا اليوم</div>`;
 }
 
@@ -3721,12 +3725,14 @@ function renderFinance(){
     <div class="trans-icon" style="background:rgba(46,204,113,0.1);color:var(--green)"><i class="fas ${Object.keys(incIcons).find(k=>t.type.includes(k))?incIcons[Object.keys(incIcons).find(k=>t.type.includes(k))]:'fa-coins'}"></i></div>
     <div style="flex:1;padding:0 10px"><div style="font-size:13px;font-weight:700">${t.type}</div><div style="font-size:11px;color:var(--text3)">${t.date} ${t.note?'• '+t.note:''}</div></div>
     <div class="trans-amount income">+${t.amount.toLocaleString()} ج</div>
+    <button class="trans-del-btn" onclick="deleteTransaction('income',${transactions.income.indexOf(t)})" title="حذف" aria-label="حذف"><i class="fas fa-trash"></i></button>
   </div>`).join(''):`<div class="trans-empty"><i class="fas fa-inbox"></i>لا يوجد دخل مسجل في هذا الأسبوع</div>`;
 
   document.getElementById('expense-list').innerHTML=weekExpense.length?weekExpense.map((t,i)=>`<div class="trans-item" style="animation-delay:${i*.03}s">
     <div class="trans-icon" style="background:rgba(239,68,68,0.1);color:var(--red)"><i class="fas ${Object.keys(expIcons).find(k=>t.type.includes(k))?expIcons[Object.keys(expIcons).find(k=>t.type.includes(k))]:'fa-receipt'}"></i></div>
     <div style="flex:1;padding:0 10px"><div style="font-size:13px;font-weight:700">${t.type}</div><div style="font-size:11px;color:var(--text3)">${t.date} ${t.note?'• '+t.note:''}</div></div>
     <div class="trans-amount expense">-${t.amount.toLocaleString()} ج</div>
+    <button class="trans-del-btn" onclick="deleteTransaction('expense',${transactions.expense.indexOf(t)})" title="حذف" aria-label="حذف"><i class="fas fa-trash"></i></button>
   </div>`).join(''):`<div class="trans-empty"><i class="fas fa-inbox"></i>لا يوجد مصروفات مسجلة في هذا الأسبوع</div>`;
 }
 
@@ -4174,6 +4180,19 @@ function addTransaction(ttype){
   autoRefresh();
   renderFinance();
   showNotif('تمت إضافة '+(ttype==='income'?'الدخل':'المصروف'),'success');
+}
+
+function deleteTransaction(ttype,idx){
+  const t=transactions[ttype]&&transactions[ttype][idx];
+  if(!t)return;
+  const label=ttype==='income'?'الدخل':'المصروف';
+  if(!confirm(`حذف ${label} ده؟\n${t.type} — ${t.amount.toLocaleString()} جنيه${t.date?'\nالتاريخ: '+t.date:''}${t.note?'\nملاحظة: '+t.note:''}\n\n⚠️ لا يمكن التراجع عن الحذف.`))return;
+  transactions[ttype].splice(idx,1);
+  sbDeleteRecords('xgym_transactions',[t]);
+  lsSave();
+  autoRefresh();
+  renderFinance();
+  showNotif('تم حذف '+label,'success');
 }
 
 function cleanDuplicateTransactions(){
