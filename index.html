@@ -2193,6 +2193,7 @@ function sbSubscribePrices(client){
       } else if(eventType==='DELETE'){
         if(o&&o.key){delete prices[o.key];delete priceNames[o.key];delete DURATIONS[o.key];}
       }
+      _snap.prices=_pricesSig();
       lsSave_local();
       renderPriceSettings&&renderPriceSettings();
       renderSubscriptions&&renderSubscriptions();
@@ -2240,7 +2241,31 @@ create policy if not exists "public rw transactions" on xgym_transactions for al
 create policy if not exists "public rw prices" on xgym_prices for all using (true) with check (true);
 create policy if not exists "public rw coupons" on xgym_coupons for all using (true) with check (true);
 create policy if not exists "public rw history" on xgym_member_history for all using (true) with check (true);
-create policy if not exists "public rw settings" on xgym_settings for all using (true) with check (true);`;
+create policy if not exists "public rw settings" on xgym_settings for all using (true) with check (true);
+
+-- ===== X GYM: ترقية المزامنة بين الأجهزة (شغّله مرة واحدة في Supabase SQL Editor) =====
+-- لا يحذف أي بيانات موجودة.
+
+-- 1) معرّف فريد لكل سجل (حضور / دخل / مصروف / تاريخ عضو) لمنع التكرار والرفع الآمن
+alter table xgym_attendance     add column if not exists uid text;
+alter table xgym_transactions   add column if not exists uid text;
+alter table xgym_member_history add column if not exists uid text;
+
+create unique index if not exists uq_attendance_uid   on xgym_attendance(uid);
+create unique index if not exists uq_transactions_uid on xgym_transactions(uid);
+create unique index if not exists uq_history_uid      on xgym_member_history(uid);
+
+-- 2) تفعيل Realtime لجداول النظام (تحديث لحظي على كل الأجهزة)
+do $$
+declare t text;
+begin
+  foreach t in array array['xgym_members','xgym_attendance','xgym_transactions','xgym_member_history','xgym_settings','xgym_coupons'] loop
+    begin
+      execute format('alter publication supabase_realtime add table %I', t);
+    exception when duplicate_object then null;
+    end;
+  end loop;
+end $$;`;
 
 function updateSbNavBtn(connected){
   const btn=document.getElementById('sb-nav-btn');
@@ -2275,10 +2300,12 @@ async function sbConnect(){
     box.style.color='var(--green)';
     box.innerHTML='<i class="fas fa-check-circle" style="margin-left:6px"></i>تم الاتصال بنجاح! جاري رفع البيانات...';
     updateSbNavBtn(true);
-    await sbPushAll();
+    await sbPushAll(true);
     box.innerHTML='<i class="fas fa-check-circle" style="margin-left:6px"></i>✅ متصل ومزامن! كل التغييرات ستُحفظ تلقائياً على Supabase.';
     // ✅ Realtime: أي تغيير على xgym_prices يتزامن فوراً
     sbSubscribePrices(_supabase);
+    sbSubscribeAll(_supabase);
+    sbStartAutoSync();
     setTimeout(()=>closeModal('supabase-config-modal'),1800);
     showNotif('تم ربط Supabase بنجاح','success');
   }catch(e){
@@ -2291,93 +2318,135 @@ async function sbConnect(){
 
 // ===== SUPABASE: جداول منفصلة =====
 
+// ===== SUPABASE: مزامنة ذكية (رفع تزايدي + سحب دوري + Realtime) =====
+// المبدأ: كل جهاز يرفع فقط ما غيّره هو، ويسحب باستمرار ما غيّره الآخرون.
+// لا يوجد "حذف الكل وإعادة الإدراج" بعد الآن، فجهاز قديم لا يمكنه مسح بيانات جهاز آخر.
+const _snap={};              // آخر حالة معروفة على السيرفر (باقات/كوبونات/إعدادات)
+const _memberSnap={};        // آخر نسخة معروفة لكل عضو على السيرفر
+let _sbSyncRunning=false,_sbSyncAgain=false,_sbBusy=0,_pulledOnce=false,_sbWarned=false;
+
+function _newUid(){return 'u'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);}
+function _sbReportErr(where,e){
+  console.warn(where+' error:',e);
+  if(_sbWarned)return;
+  _sbWarned=true;
+  const msg=(e&&e.message)||String(e);
+  showNotif(/uid/i.test(msg)
+    ?'شغّل ملف migration.sql في Supabase لتفعيل المزامنة الكاملة'
+    :'تعذر الحفظ على Supabase: '+msg,'warning');
+}
+
+// أي سجل جديد (حضور / دخل / مصروف / تاريخ عضو) بدون uid = جديد ولازم يترفع
+function stampNewRecords(){
+  const st=r=>{if(r&&typeof r==='object'&&!r.uid){r.uid=_newUid();r._unsynced=true;}};
+  attendance.forEach(st);
+  (transactions.income||[]).forEach(st);
+  (transactions.expense||[]).forEach(st);
+  Object.values(memberHistory).forEach(a=>(a||[]).forEach(st));
+}
+
+// ---------- الأعضاء: رفع المتغير فقط ----------
 async function sbPushMembers(){
-  if(!_supabase)return;
+  if(!_supabase||!members.length)return;
   try{
-    if(!members.length)return;
-    // upsert فقط بدون delete — آمن ضد فقد البيانات
-    const rows=members.map(m=>({id:m.id, data:m, user_id:m.user_id||null, photo_url:m.photo_url||null, updated_at:new Date().toISOString()}));
+    const now=new Date().toISOString();
+    const changed=members.filter(m=>JSON.stringify(m)!==_memberSnap[m.id]);
+    if(!changed.length)return;
+    const rows=changed.map(m=>({id:m.id,data:m,user_id:m.user_id||null,photo_url:m.photo_url||null,updated_at:now}));
     const {error}=await _supabase.from('xgym_members').upsert(rows,{onConflict:'id'});
     if(error)throw error;
-    // حذف الأعضاء المؤرشفين/المحذوفين من Supabase (اللي مش موجودين في members[])
-    const liveIds=members.map(m=>m.id);
-    if(liveIds.length){
-      await _supabase.from('xgym_members').delete().not('id','in','('+liveIds.map(id=>`"${id}"`).join(',')+')');
+    changed.forEach(m=>{_memberSnap[m.id]=JSON.stringify(m);});
+  }catch(e){_sbReportErr('sbPushMembers',e);}
+}
+async function sbDeleteMember(id){
+  if(!_supabase)return;
+  _sbBusy++;
+  try{
+    await _supabase.from('xgym_members').delete().eq('id',id);
+    delete _memberSnap[id];
+  }catch(e){_sbReportErr('sbDeleteMember',e);}
+  finally{_sbBusy--;}
+}
+
+// ---------- السجلات (حضور / دخل / مصروف / تاريخ): إضافة فقط ----------
+async function _flushTable(table,items,toRow,label){
+  if(!items.length)return;
+  try{
+    let {error}=await _supabase.from(table).upsert(items.map(toRow),{onConflict:'uid'});
+    if(error&&/uid/i.test(error.message||'')){
+      // عمود uid لسه متضافش في Supabase → إدراج عادي (يشتغل لكن بدون حماية من التكرار)
+      _sbReportErr(label,error);
+      error=(await _supabase.from(table).insert(items.map(x=>{const r=toRow(x);delete r.uid;return r;}))).error;
     }
-  }catch(e){console.warn('sbPushMembers error:',e);}
+    if(error)throw error;
+    items.forEach(x=>{delete x._unsynced;});
+  }catch(e){_sbReportErr(label,e);}
+}
+async function sbFlushUnsynced(){
+  if(!_supabase)return;
+  const ua=attendance.filter(a=>a&&a._unsynced);
+  const ti=(transactions.income||[]).filter(t=>t&&t._unsynced);
+  const te=(transactions.expense||[]).filter(t=>t&&t._unsynced);
+  const hs=[],hMap=new Map();
+  Object.entries(memberHistory).forEach(([mid,arr])=>(arr||[]).forEach(h=>{if(h&&h._unsynced){hs.push(h);hMap.set(h,mid);}}));
+  await Promise.all([
+    _flushTable('xgym_attendance',ua,a=>({uid:a.uid,member_id:a.id||'',member_name:a.name||'',member_phone:a.phone||'',type:a.type||'in',time:a.time||new Date().toISOString(),ci:a.ci||0,session:a.session||getRecordSession(a)}),'attendance'),
+    _flushTable('xgym_transactions',ti,t=>({uid:t.uid,type:t.type||'income_other',amount:t.amount||0,date:t.date||'',note:t.note||'',category:'income'}),'income'),
+    _flushTable('xgym_transactions',te,t=>({uid:t.uid,type:t.type||'expense_other',amount:t.amount||0,date:t.date||'',note:t.note||'',category:'expense'}),'expense'),
+    _flushTable('xgym_member_history',hs,h=>({uid:h.uid,member_id:hMap.get(h),action:h.action||'',type:h.type||'',amount:h.amount||0,date:h.date||'',end_date:h.end||null}),'history'),
+  ]);
+  lsSave_local();
+}
+async function sbDeleteRecords(table,items){
+  if(!_supabase||!items.length)return;
+  _sbBusy++;
+  try{
+    const ids=[],uids=[];
+    items.forEach(t=>{
+      const u=String(t.uid||'');
+      if(u.startsWith('srv_')){const n=parseInt(u.slice(4));if(!isNaN(n))ids.push(n);}
+      else if(u&&!u.startsWith('lg_'))uids.push(u);
+    });
+    if(ids.length)await _supabase.from(table).delete().in('id',ids);
+    if(uids.length)await _supabase.from(table).delete().in('uid',uids);
+  }catch(e){_sbReportErr('sbDeleteRecords',e);}
+  finally{_sbBusy--;}
 }
 
-async function sbPushAttendance(){
+// ---------- الباقات / الكوبونات / الإعدادات: رفع عند التغيير فقط ----------
+function _pricesSig(){return JSON.stringify([prices,priceNames,DURATIONS]);}
+function _couponsSig(){return JSON.stringify(coupons);}
+function _settingsSig(){return JSON.stringify([USERS.admin.password,USERS.reception.password,_gymName,_gymPhone,_gymWa,_gymAddr]);}
+
+async function sbPushPrices(force){
   if(!_supabase)return;
+  if(!force&&(_snap.prices===undefined||_snap.prices===_pricesSig()))return;
   try{
-    await _supabase.from('xgym_attendance').delete().gte('id',0);
-    if(attendance.length){
-      const rows=attendance.map(a=>({
-        member_id:a.id||'', member_name:a.name||'', member_phone:a.phone||'',
-        type:a.type||'in', time:a.time||new Date().toISOString(), ci:a.ci||0,
-        session:a.session||getRecordSession(a)
-      }));
-      await _supabase.from('xgym_attendance').insert(rows);
+    const keys=Object.keys(prices);
+    if(keys.length){
+      const rows=keys.map(k=>({key:k,price:prices[k],name:priceNames[k]||k,duration:DURATIONS[k]||30,updated_at:new Date().toISOString()}));
+      const {error}=await _supabase.from('xgym_prices').upsert(rows,{onConflict:'key'});
+      if(error)throw error;
+      await _supabase.from('xgym_prices').delete().not('key','in','('+keys.map(k=>'"'+k+'"').join(',')+')');
+    }else{
+      await _supabase.from('xgym_prices').delete().neq('key','__none__');
     }
-  }catch(e){console.warn('sbPushAttendance error:',e);}
+    _snap.prices=_pricesSig();
+  }catch(e){_sbReportErr('sbPushPrices',e);}
 }
-
-async function sbPushTransactions(){
+async function sbPushCoupons(force){
   if(!_supabase)return;
-  try{
-    // حذف الكل وإعادة الإدراج — التأكد من نجاح الحذف قبل الإضافة
-    const {error:delErr}=await _supabase.from('xgym_transactions').delete().not('id','is',null);
-    if(delErr) throw delErr;
-    const rows=[
-      ...transactions.income.map(t=>({type:t.type||'income_other',amount:t.amount||0,date:t.date||'',note:t.note||'',category:'income'})),
-      ...transactions.expense.map(t=>({type:t.type||'expense_other',amount:t.amount||0,date:t.date||'',note:t.note||'',category:'expense'}))
-    ];
-    if(rows.length) await _supabase.from('xgym_transactions').insert(rows);
-  }catch(e){console.warn('sbPushTransactions error:',e);}
-}
-
-async function sbPushPrices(){
-  if(!_supabase)return;
-  try{
-    // حذف كل الباقات القديمة أولاً ثم رفع الحالية (علشان الحذف يتطبق على Supabase)
-    await _supabase.from('xgym_prices').delete().neq('key','__none__');
-    const rows=Object.keys(prices).map(k=>({
-      key:k, price:prices[k],
-      name:priceNames[k]||k,
-      duration:DURATIONS[k]||30,
-      updated_at:new Date().toISOString()
-    }));
-    if(rows.length) await _supabase.from('xgym_prices').insert(rows);
-  }catch(e){console.warn('sbPushPrices error:',e);}
-}
-
-async function sbPushCoupons(){
-  if(!_supabase)return;
+  if(!force&&(_snap.coupons===undefined||_snap.coupons===_couponsSig()))return;
   try{
     await _supabase.from('xgym_coupons').delete().gte('id',0);
     if(coupons.length){
-      const rows=coupons.map(c=>({code:c.code,type:c.type,value:c.value}));
-      await _supabase.from('xgym_coupons').insert(rows);
+      const rows=coupons.map(c=>({code:c.code,type:c.type,value:c.value,active:c.active!==false,uses:c.uses||0}));
+      const {error}=await _supabase.from('xgym_coupons').insert(rows);
+      if(error)throw error;
     }
-  }catch(e){console.warn('sbPushCoupons error:',e);}
+    _snap.coupons=_couponsSig();
+  }catch(e){_sbReportErr('sbPushCoupons',e);}
 }
-
-async function sbPushHistory(){
-  if(!_supabase)return;
-  try{
-    await _supabase.from('xgym_member_history').delete().gte('id',0);
-    const rows=[];
-    Object.entries(memberHistory).forEach(([memberId,hist])=>{
-      (hist||[]).forEach(h=>rows.push({
-        member_id:memberId, action:h.action||'',
-        type:h.type||'', amount:h.amount||0,
-        date:h.date||'', end_date:h.end||null
-      }));
-    });
-    if(rows.length) await _supabase.from('xgym_member_history').insert(rows);
-  }catch(e){console.warn('sbPushHistory error:',e);}
-}
-
 async function sbPushSettings(extra={}){
   if(!_supabase)return;
   try{
@@ -2385,140 +2454,191 @@ async function sbPushSettings(extra={}){
     const rows=[
       {key:'xgym_passwords', value:{admin:USERS.admin.password, reception:USERS.reception.password}, updated_at:now},
     ];
-    // بيانات الجيم
-    const gymName=_gymName;
-    const gymPhone=_gymPhone;
-    const gymWa=_gymWa;
-    const gymAddr=_gymAddr;
-    if(gymName)  rows.push({key:'xgym_gym_name',    value:gymName,  updated_at:now});
-    if(gymPhone) rows.push({key:'xgym_gym_phone',   value:gymPhone, updated_at:now});
-    if(gymWa)    rows.push({key:'xgym_gym_wa',      value:gymWa,    updated_at:now});
-    if(gymAddr)  rows.push({key:'xgym_gym_address', value:gymAddr,  updated_at:now});
-    // إضافات خارجية
+    if(_gymName)  rows.push({key:'xgym_gym_name',    value:_gymName,  updated_at:now});
+    if(_gymPhone) rows.push({key:'xgym_gym_phone',   value:_gymPhone, updated_at:now});
+    if(_gymWa)    rows.push({key:'xgym_gym_wa',      value:_gymWa,    updated_at:now});
+    if(_gymAddr)  rows.push({key:'xgym_gym_address', value:_gymAddr,  updated_at:now});
     Object.entries(extra).forEach(([k,v])=>rows.push({key:k,value:v,updated_at:now}));
-    await _supabase.from('xgym_settings').upsert(rows,{onConflict:'key'});
-  }catch(e){console.warn('sbPushSettings error:',e);}
+    const {error}=await _supabase.from('xgym_settings').upsert(rows,{onConflict:'key'});
+    if(error)throw error;
+    _snap.settings=_settingsSig();
+  }catch(e){_sbReportErr('sbPushSettings',e);}
 }
 
-async function sbPushAll(){
+async function sbPushAll(force){
   if(!_supabase)return;
-  await Promise.all([
-    sbPushMembers(),
-    sbPushAttendance(),
-    sbPushTransactions(),
-    sbPushPrices(),
-    sbPushCoupons(),
-    sbPushHistory(),
-    sbPushSettings(),
-  ]);
+  if(_sbSyncRunning){_sbSyncAgain=true;return;}
+  _sbSyncRunning=true;
+  try{
+    let first=true;
+    do{
+      _sbSyncAgain=false;
+      stampNewRecords();
+      const f=first&&force;first=false;
+      await Promise.all([
+        sbPushMembers(),
+        sbFlushUnsynced(),
+        sbPushPrices(f),
+        sbPushCoupons(f),
+        (f||(_snap.settings!==undefined&&_snap.settings!==_settingsSig()))?sbPushSettings():Promise.resolve(),
+      ]);
+    }while(_sbSyncAgain);
+  }finally{_sbSyncRunning=false;}
+}
+
+// ---------- السحب ----------
+async function sbFetchPaged(table,col,asc,max){
+  let all=[],from=0;
+  while(from<max){
+    const {data,error}=await _supabase.from(table).select('*').order(col,{ascending:asc}).range(from,from+999);
+    if(error)throw error;
+    all=all.concat(data||[]);
+    if(!data||data.length<1000)break;
+    from+=1000;
+  }
+  return all;
 }
 
 async function sbPullAll(force=false){
   if(!_supabase)return false;
-  // حماية: لو في تغيير محلي حصل من أقل من 10 ثواني، لا تعمل pull (علشان الـ push ما يتغلبش)
-  if(!force && Date.now() - _lastLocalSaveTime < 10000){
-    console.log('sbPullAll skipped — recent local save detected');
-    return false;
-  }
+  if(_sbSyncRunning||_sbBusy>0)return false;
+  if(!force && Date.now() - _lastLocalSaveTime < 3000)return false;
   try{
-    // جلب كل الجداول بالتوازي
-    const [mRes,aRes,tRes,pRes,cRes,hRes,sRes]=await Promise.all([
+    const [mRes,aRows,tRows,pRes,cRes,hRows,sRes]=await Promise.all([
       _supabase.from('xgym_members').select('data,user_id,photo_url'),
-      _supabase.from('xgym_attendance').select('*').order('time',{ascending:false}).limit(500),
-      _supabase.from('xgym_transactions').select('*').order('id',{ascending:false}),
+      sbFetchPaged('xgym_attendance','time',false,5000).catch(()=>null),
+      sbFetchPaged('xgym_transactions','id',false,20000).catch(()=>null),
       _supabase.from('xgym_prices').select('*'),
       _supabase.from('xgym_coupons').select('*'),
-      _supabase.from('xgym_member_history').select('*'),
+      sbFetchPaged('xgym_member_history','id',true,20000).catch(()=>null),
       _supabase.from('xgym_settings').select('*'),
     ]);
+    // لو بدأ رفع أثناء الجلب نتجاهل هذا السحب (هيتعاد في الدورة الجاية)
+    if(_sbSyncRunning||_sbBusy>0)return false;
 
-    // الأعضاء — حماية: لو Supabase فاضي ومحلي فيه بيانات، نحافظ على المحلي
-    if(mRes.data&&mRes.data.length){
-      members=mRes.data.map(r=>({...r.data, user_id:r.user_id||r.data.user_id||null, photo_url:r.photo_url||r.data.photo_url||null}));
-    } else if(!mRes.data||mRes.data.length===0){
-      // Supabase فاضي — نحمّل من localStorage كـ fallback
-      const localMembers=JSON.parse(localStorage.getItem(LS_KEYS.members)||'[]');
-      if(localMembers.length>0){
-        members=localMembers;
-        // ارفع البيانات المحلية لـ Supabase فوراً
-        setTimeout(()=>sbPushMembers(),1000);
+    // ======= من هنا كل شيء متزامن (بدون await) فلا يحدث تداخل =======
+    stampNewRecords();
+
+    // الأعضاء — لا نستبدل لو في تعديلات محلية لسه ما اترفعتش
+    if(mRes&&mRes.data&&mRes.data.length){
+      const dirty=_pulledOnce&&members.some(m=>JSON.stringify(m)!==_memberSnap[m.id]);
+      if(!dirty){
+        members=mRes.data.map(r=>({...r.data, user_id:r.user_id||r.data.user_id||null, photo_url:r.photo_url||r.data.photo_url||null}));
+        Object.keys(_memberSnap).forEach(k=>delete _memberSnap[k]);
+        members.forEach(m=>{_memberSnap[m.id]=JSON.stringify(m);});
       }
+    } else if(mRes&&mRes.data&&!mRes.data.length&&members.length){
+      // السيرفر فاضي والمحلي فيه بيانات → ارفعها
+      Object.keys(_memberSnap).forEach(k=>delete _memberSnap[k]);
+      setTimeout(()=>sbPushMembers(),1000);
     }
+    // ترقيم الأعضاء: لا يتكرر مع أعضاء أضافهم جهاز آخر
+    members.forEach(m=>{const n=parseInt((m.id||'').replace('XG-',''));if(!isNaN(n)&&n>memberSeq)memberSeq=n;});
+    saveMemberSeq();
 
     // الحضور
-    if(aRes.data&&aRes.data.length)
-      attendance=aRes.data.map(r=>({id:r.member_id,name:r.member_name,phone:r.member_phone||'',type:r.type,time:r.time,ci:r.ci||0,session:r.session||getSessionForTime(new Date(r.time))}));
+    if(aRows&&(aRows.length||_pulledOnce)){
+      const srv=aRows.map(r=>({id:r.member_id,name:r.member_name,phone:r.member_phone||'',type:r.type,time:r.time,ci:r.ci||0,session:r.session||getSessionForTime(new Date(r.time)),uid:r.uid||('srv_'+r.id)}));
+      const have=new Set(srv.map(a=>a.uid));
+      const uns=attendance.filter(a=>a&&a._unsynced&&!have.has(a.uid));
+      attendance=uns.concat(srv).sort((a,b)=>new Date(b.time)-new Date(a.time));
+    }
 
-    // المعاملات المالية (الدخل والمصروف) — مع إزالة التكرارات
-    if(tRes.data&&tRes.data.length){
-      const dedup=(arr)=>{
+    // المعاملات المالية — إزالة التكرار القديم فقط للسجلات القديمة (بدون uid حقيقي)
+    if(tRows&&(tRows.length||_pulledOnce)){
+      const dedupOld=(arr)=>{
         const seen=new Set();
         return arr.filter(t=>{
+          if(!String(t.uid).startsWith('srv_'))return true;
           const key=`${t.type}|${t.amount}|${t.date}|${t.note||''}`;
           if(seen.has(key))return false;
           seen.add(key);return true;
         });
       };
-      transactions.income=dedup(tRes.data.filter(r=>r.category==='income').map(({category,...r})=>r));
-      transactions.expense=dedup(tRes.data.filter(r=>r.category==='expense').map(({category,...r})=>r));
+      const toTx=r=>({type:r.type,amount:Number(r.amount)||0,date:r.date,note:r.note||'',uid:r.uid||('srv_'+r.id)});
+      const keep=(local,srv)=>{
+        const have=new Set(srv.map(t=>t.uid));
+        return (local||[]).filter(t=>t&&t._unsynced&&!have.has(t.uid)).concat(srv);
+      };
+      transactions.income=keep(transactions.income,dedupOld(tRows.filter(r=>r.category==='income').map(toTx)));
+      transactions.expense=keep(transactions.expense,dedupOld(tRows.filter(r=>r.category==='expense').map(toTx)));
     }
 
-    // الأسعار + الأسماء + المدد — استبدال كامل (علشان الحذف يتطبق)
-    if(pRes.data&&pRes.data.length){
-      // مسح المحلي أولاً ثم تحميل Supabase كاملاً
-      Object.keys(prices).forEach(k=>delete prices[k]);
-      Object.keys(priceNames).forEach(k=>delete priceNames[k]);
-      Object.keys(DURATIONS).forEach(k=>delete DURATIONS[k]);
-      pRes.data.forEach(r=>{
-        prices[r.key]=r.price;
-        if(r.name) priceNames[r.key]=r.name;
-        if(r.duration) DURATIONS[r.key]=r.duration;
+    // تاريخ الأعضاء
+    if(hRows&&(hRows.length||_pulledOnce)){
+      const srvH={},have=new Set();
+      hRows.forEach(r=>{
+        const uid=r.uid||('srv_'+r.id);
+        have.add(uid);
+        (srvH[r.member_id]=srvH[r.member_id]||[]).push({action:r.action,type:r.type,amount:r.amount,date:r.date,end:r.end_date,uid});
       });
+      Object.entries(memberHistory).forEach(([mid,arr])=>(arr||[]).forEach(h=>{
+        if(h&&h._unsynced&&!have.has(h.uid))(srvH[mid]=srvH[mid]||[]).push(h);
+      }));
+      memberHistory=srvH;
+    }
+
+    // الأسعار + الأسماء + المدد
+    if(pRes&&pRes.data){
+      const pDirty=_snap.prices!==undefined&&_snap.prices!==_pricesSig();
+      if(pRes.data.length){
+        if(!pDirty){
+          Object.keys(prices).forEach(k=>delete prices[k]);
+          Object.keys(priceNames).forEach(k=>delete priceNames[k]);
+          Object.keys(DURATIONS).forEach(k=>delete DURATIONS[k]);
+          pRes.data.forEach(r=>{
+            prices[r.key]=r.price;
+            if(r.name) priceNames[r.key]=r.name;
+            if(r.duration) DURATIONS[r.key]=r.duration;
+          });
+          _snap.prices=_pricesSig();
+        }
+      } else if(!pDirty){
+        _snap.prices='';
+      }
     }
 
     // الكوبونات
-    if(cRes.data) coupons=cRes.data.map(({id,...r})=>r);
-
-    // تاريخ الأعضاء
-    if(hRes.data&&hRes.data.length){
-      memberHistory={};
-      hRes.data.forEach(r=>{
-        if(!memberHistory[r.member_id]) memberHistory[r.member_id]=[];
-        memberHistory[r.member_id].push({action:r.action,type:r.type,amount:r.amount,date:r.date,end:r.end_date});
-      });
+    if(cRes&&cRes.data){
+      const cDirty=_snap.coupons!==undefined&&_snap.coupons!==_couponsSig();
+      if(!cDirty){coupons=cRes.data.map(({id,...r})=>r);_snap.coupons=_couponsSig();}
     }
 
-    // الإعدادات (passwords + gym name + أي بيانات تانية)
+    // الإعدادات (كلمات المرور + بيانات الجيم)
     let hasSettings=false;
-    if(sRes.data&&sRes.data.length){
+    if(sRes&&sRes.data&&sRes.data.length){
       hasSettings=true;
+      const sDirty=_snap.settings!==undefined&&_snap.settings!==_settingsSig();
       const sMap={};
       sRes.data.forEach(r=>{sMap[r.key]=r.value;});
-
-      if(sMap.xgym_passwords){
-        if(sMap.xgym_passwords.admin)  USERS.admin.password=sMap.xgym_passwords.admin;
-        if(sMap.xgym_passwords.reception) USERS.reception.password=sMap.xgym_passwords.reception;
-      }
-      if(sMap.xgym_setup_done){
-        if(sMap.xgym_setup_done.admin_pw)  USERS.admin.password=sMap.xgym_setup_done.admin_pw;
-        if(sMap.xgym_setup_done.recep_pw)  USERS.reception.password=sMap.xgym_setup_done.recep_pw;
-        if(sMap.xgym_setup_done.gym_name){
-          _gymName=sMap.xgym_setup_done.gym_name;
+      if(!sDirty){
+        if(sMap.xgym_passwords){
+          if(sMap.xgym_passwords.admin)  USERS.admin.password=sMap.xgym_passwords.admin;
+          if(sMap.xgym_passwords.reception) USERS.reception.password=sMap.xgym_passwords.reception;
+        }
+        if(sMap.xgym_setup_done){
+          if(sMap.xgym_setup_done.admin_pw)  USERS.admin.password=sMap.xgym_setup_done.admin_pw;
+          if(sMap.xgym_setup_done.recep_pw)  USERS.reception.password=sMap.xgym_setup_done.recep_pw;
+          if(sMap.xgym_setup_done.gym_name){
+            _gymName=sMap.xgym_setup_done.gym_name;
+            document.querySelectorAll('.logo-text').forEach(el=>el.textContent=_gymName);
+          }
+        }
+        if(sMap.xgym_gym_name){
+          _gymName=typeof sMap.xgym_gym_name==='string'?sMap.xgym_gym_name:String(sMap.xgym_gym_name);
           document.querySelectorAll('.logo-text').forEach(el=>el.textContent=_gymName);
         }
+        if(sMap.xgym_gym_phone) _gymPhone=typeof sMap.xgym_gym_phone==='string'?sMap.xgym_gym_phone:String(sMap.xgym_gym_phone);
+        if(sMap.xgym_gym_wa)    _gymWa=typeof sMap.xgym_gym_wa==='string'?sMap.xgym_gym_wa:String(sMap.xgym_gym_wa);
+        if(sMap.xgym_gym_address) _gymAddr=typeof sMap.xgym_gym_address==='string'?sMap.xgym_gym_address:String(sMap.xgym_gym_address);
+        _snap.settings=_settingsSig();
       }
-      if(sMap.xgym_gym_name){
-        _gymName=typeof sMap.xgym_gym_name==='string'?sMap.xgym_gym_name:String(sMap.xgym_gym_name);
-        document.querySelectorAll('.logo-text').forEach(el=>el.textContent=_gymName);
-      }
-      if(sMap.xgym_gym_phone) _gymPhone=typeof sMap.xgym_gym_phone==='string'?sMap.xgym_gym_phone:String(sMap.xgym_gym_phone);
-      if(sMap.xgym_gym_wa)    _gymWa=typeof sMap.xgym_gym_wa==='string'?sMap.xgym_gym_wa:String(sMap.xgym_gym_wa);
-      if(sMap.xgym_gym_address) _gymAddr=typeof sMap.xgym_gym_address==='string'?sMap.xgym_gym_address:String(sMap.xgym_gym_address);
-      // تاريخ التريال
       if(sMap.trial_start) _trialStart = typeof sMap.trial_start==='string'?sMap.trial_start:JSON.stringify(sMap.trial_start).replace(/"/g,'');
+    } else if(sRes&&sRes.data&&_snap.settings===undefined){
+      _snap.settings='';
     }
 
-    // حفظ في localStorage
+    _pulledOnce=true;
     lsSave_local();
 
     const hasData=members.length>0||attendance.length>0||
@@ -2526,6 +2646,88 @@ async function sbPullAll(force=false){
     return hasData;
   }catch(e){console.warn('sbPullAll error:',e);return false;}
 }
+
+// ---------- مزامنة لحظية: Realtime + سحب دوري ----------
+let _syncChannel=null,_pullTimer=null,_syncNowBusy=false;
+function sbSubscribeAll(client){
+  try{
+    if(_syncChannel){try{_syncChannel.unsubscribe();}catch(e){}}
+    _syncChannel=client.channel('xgym_sync_rt');
+    ['xgym_members','xgym_attendance','xgym_transactions','xgym_member_history','xgym_settings','xgym_coupons'].forEach(t=>{
+      _syncChannel.on('postgres_changes',{event:'*',schema:'public',table:t},()=>sbSchedulePull());
+    });
+    _syncChannel.subscribe();
+  }catch(e){console.warn('realtime subscribe failed (polling will cover):',e);}
+}
+function sbSchedulePull(){clearTimeout(_pullTimer);_pullTimer=setTimeout(sbSyncNow,600);}
+
+function _dataSig(){
+  try{
+    return JSON.stringify([members,attendance.length,attendance[0]&&attendance[0].uid,
+      transactions.income.length,transactions.expense.length,
+      transactions.income[0]&&transactions.income[0].uid,
+      Object.keys(memberHistory).length,prices,coupons.length]);
+  }catch(e){return String(Math.random());}
+}
+function _refreshActivePage(){
+  const a=document.querySelector('.content.active');
+  if(!a)return;
+  const p=a.id.replace('page-','');
+  try{
+    if(p==='dashboard')renderDashboard();
+    else if(p==='members')filterMembers(document.getElementById('member-search')?.value||'');
+    else if(p==='attendance')renderAttendance();
+    else if(p==='attendance-record')renderAttendanceRecord();
+    else if(p==='finance')renderFinance();
+    else if(p==='reports')renderReports();
+    else if(p==='subscriptions')renderSubscriptions();
+    else if(p==='expiring')renderExpiring();
+    const tc=document.getElementById('today-count');
+    if(tc){
+      const todayStr=new Date().toDateString();
+      tc.textContent=new Set(attendance.filter(x=>x.type==='in'&&new Date(x.time).toDateString()===todayStr).map(x=>x.id)).size;
+    }
+    checkExpiryNotifications&&checkExpiryNotifications();
+  }catch(e){console.warn('refresh error',e);}
+}
+async function sbSyncNow(){
+  if(!_supabase||_syncNowBusy)return;
+  _syncNowBusy=true;
+  try{
+    await sbPushAll();
+    const before=_dataSig();
+    await sbPullAll(true);
+    if(_dataSig()!==before)_refreshActivePage();
+  }catch(e){console.warn('sbSyncNow error:',e);}
+  finally{_syncNowBusy=false;}
+}
+function sbStartAutoSync(){
+  if(window._sbAutoSyncStarted)return;
+  window._sbAutoSyncStarted=true;
+  setInterval(()=>{if(!document.hidden)sbSyncNow();},12000);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)sbSyncNow();});
+  window.addEventListener('online',()=>sbSyncNow());
+  window.addEventListener('focus',()=>sbSyncNow());
+}
+
+// أزرار "رفع للسحابة" / "جلب من السحابة" في القائمة الجانبية
+async function forceSyncToSupabase(){
+  if(!_supabase){showNotif('Supabase غير متصل','warning');return;}
+  Object.keys(_memberSnap).forEach(k=>delete _memberSnap[k]);
+  await sbPushAll(true);
+  showNotif('تم رفع الأعضاء والباقات والإعدادات للسحابة ✅','success');
+}
+async function forceSyncFromSupabase(){
+  if(!_supabase){showNotif('Supabase غير متصل','warning');return;}
+  if(!confirm('سيتم استبدال بيانات هذا الجهاز بالبيانات الموجودة على السحابة. متابعة؟'))return;
+  const prev={p:_pulledOnce,s:{..._snap}};
+  _pulledOnce=false;_snap.prices=_snap.coupons=_snap.settings=undefined;
+  const ok=await sbPullAll(true);
+  if(ok===false&&!_pulledOnce){_pulledOnce=prev.p;Object.assign(_snap,prev.s);showNotif('تعذر الجلب من السحابة','warning');return;}
+  _refreshActivePage();
+  showNotif('تم جلب البيانات من السحابة ✅','success');
+}
+
 
 // ===== LOCAL STORAGE - مفاتيح التخزين =====
 const LS_KEYS={
@@ -2574,6 +2776,7 @@ function lsSave(){
   if(el){el.textContent='✓ محفوظ';el.style.color='var(--green)';setTimeout(()=>{el.textContent='';},2000);}
   
   // ✓ حفظ محلي دائماً (الأساس الآمن)
+  stampNewRecords();
   _lastLocalSaveTime = Date.now();
   lsSave_local();
   
@@ -2684,6 +2887,12 @@ let priceNames=_saved.priceNames||{...DEFAULT_PRICE_NAMES};
 let coupons=_saved.coupons||[];
 let memberHistory=_saved.memberHistory||{};
 if(_saved.durations)Object.assign(DURATIONS,_saved.durations);
+// سجلات قديمة محفوظة محلياً قبل نظام uid: تعتبر متزامنة بالفعل (لا تُرفع تاني)
+(function stampLegacy(){
+  const lg=r=>{if(r&&typeof r==='object'&&!r.uid)r.uid='lg_'+Math.random().toString(36).slice(2,10);};
+  attendance.forEach(lg);(transactions.income||[]).forEach(lg);(transactions.expense||[]).forEach(lg);
+  Object.values(memberHistory).forEach(a=>(a||[]).forEach(lg));
+})();
 
 // ===== نظام فترات الحضور (رجالي صباح / سيدات / رجالي مساء) =====
 // 12:00ص - 09:59ص = رجالي صباح | 10:00ص - 03:59م = سيدات | 04:00م - 11:59م = رجالي مساء
@@ -3976,10 +4185,13 @@ function cleanDuplicateTransactions(){
       seen.add(key);return true;
     });
   };
+  const oldAll=[...transactions.income,...transactions.expense];
   const beforeInc=transactions.income.length;
   const beforeExp=transactions.expense.length;
   transactions.income=dedup(transactions.income);
   transactions.expense=dedup(transactions.expense);
+  const _kept=new Set([...transactions.income,...transactions.expense]);
+  sbDeleteRecords('xgym_transactions',oldAll.filter(t=>!_kept.has(t)));
   const removed=(beforeInc+beforeExp)-(transactions.income.length+transactions.expense.length);
   if(removed>0){
     lsSave();renderFinance();autoRefresh();
@@ -4185,6 +4397,7 @@ function permanentDeleteMember(id){
   if(!confirm('⚠️ حذف نهائي للعضو: '+m.name+'؟\nهذا الإجراء لا يمكن التراجع عنه!'))return;
   if(!confirm('تأكيد أخير — سيتم حذف جميع بيانات العضو نهائياً!'))return;
   members=members.filter(x=>x.id!==id);
+  sbDeleteMember(id);
   lsSave();
   showNotif('تم الحذف النهائي للعضو: '+m.name,'warning');
   renderArchivedMembers();
@@ -4762,6 +4975,7 @@ function scanMember(){
 function resetAttendanceLog(){
   if(!confirm('هل تريد مسح كل سجلات الحضور والبدء من جديد؟ كل الأعضاء سيعودون لصفر زيارة. هذا الإجراء لا يمكن التراجع عنه.'))return;
   attendance=[];
+  if(_supabase){_sbBusy++;(async()=>{try{await _supabase.from('xgym_attendance').delete().gte('id',0);}catch(e){console.warn(e);}finally{_sbBusy--;}})();}
   lsSave();
   renderReports();
   renderAttendance();
@@ -5681,7 +5895,7 @@ updateTime();setInterval(updateTime,1000);
   // 3. Init Supabase client (sync, just creates client)
   const sbUrl=localStorage.getItem(SB_URL_KEY)||'https://hotheuohwywchcrydvxl.supabase.co';
   const sbKey=localStorage.getItem(SB_KEY_KEY)||'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhvdGhldW9od3l3Y2hjcnlkdnhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNTA0OTAsImV4cCI6MjA5NTYyNjQ5MH0.plhZ_0ihIw1T7w0gKrvyxAGkU6iyvFd0k6PsuPk7ovY';
-  try{ _supabase=supabase.createClient(sbUrl,sbKey); updateSbNavBtn(true); sbSubscribePrices(_supabase); }catch(e){ _supabase=null; }
+  try{ _supabase=supabase.createClient(sbUrl,sbKey); updateSbNavBtn(true); sbSubscribePrices(_supabase); sbSubscribeAll(_supabase); }catch(e){ _supabase=null; }
 
   // 4. Pull ALL data from Supabase FIRST (await properly)
   if(_supabase){
@@ -5730,6 +5944,7 @@ updateTime();setInterval(updateTime,1000);
     _decideSetupOrLogin();
   }
 
+  if(_supabase)sbStartAutoSync();
   setTimeout(()=>{checkExpiryNotifications&&checkExpiryNotifications();try{renderExpiring&&renderExpiring();}catch(e){}},1500);
   setInterval(()=>{checkExpiryNotifications&&checkExpiryNotifications();},3600000);
   // النسخ الاحتياطي التلقائي اليومي
