@@ -2212,7 +2212,16 @@ function getSbCreds(){
 }
 // يشيل أي حروف غير أرقام من رقم الموبايل عشان يتطابق دايمًا بين
 // الإنشاء والدخول (مش مهم لو الأدمن كتبه بمسافات أو شرطات)
-function normalizePhone(phone){ return (phone||'').replace(/[^0-9]/g,''); }
+function _toLatinDigits(v){
+  return String(v==null?'':v)
+    .replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d))
+    .replace(/[۰-۹]/g,d=>'۰۱۲۳۴۵۶۷۸۹'.indexOf(d));
+}
+function normalizePhone(phone){ return _toLatinDigits(phone).replace(/[^0-9]/g,''); }
+function makeMemberBarcode(id,phone){
+  const num=String(id).replace('XG-','');
+  return 'XGM'+num+normalizePhone(phone).slice(-4);
+}
 // يعرض صورة العضو (لو موجودة عبر Member Portal) بدل الحروف الأولى من الاسم
 function mAvatarInner(m){
   if(m&&m.photo_url) return `<img src="${m.photo_url}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit" loading="lazy">`;
@@ -4300,7 +4309,7 @@ function calcFinalPrice(type){
 async function addMember(){
   const fn=document.getElementById('new-fname').value.trim();
   const ln=document.getElementById('new-lname').value.trim();
-  const phone=document.getElementById('new-phone').value.trim();
+  const phone=_toLatinDigits(document.getElementById('new-phone').value.trim());
   const type=document.getElementById('new-sub-type').value;
   const start=document.getElementById('new-start-date').value;
   const gender=document.getElementById('new-gender').value;
@@ -4315,7 +4324,7 @@ async function addMember(){
   saveMemberSeq();
   const num=String(memberSeq).padStart(4,'0');
   const id='XG-'+num;
-  const barcode='XGM'+num+phone.slice(-4);
+  const barcode=makeMemberBarcode(id,phone);
   
   // حساب السعر مع الخصم
   const discType=document.getElementById('new-discount-type')?.value||'none';
@@ -4570,7 +4579,7 @@ function saveEditMember(){
   if(!fn||!phone){showNotif('الاسم والهاتف مطلوبان','warning');return;}
   const phoneChanged=normalizePhone(m.phone)!==normalizePhone(phone);
   m.name=fn+(ln?' '+ln:'');
-  m.phone=phone;
+  m.phone=_toLatinDigits(phone);
   m.gender=document.getElementById('edit-gender').value;
   m.type=document.getElementById('edit-sub-type').value;
   m.status=document.getElementById('edit-status').value;
@@ -4580,7 +4589,7 @@ function saveEditMember(){
   if(m.end){const diff=Math.ceil((new Date(m.end)-new Date())/(1000*60*60*24));m.days=Math.max(0,diff);}
   // Update barcode if phone changed
   const num=m.id.replace('XG-','');
-  m.barcode='XGM'+num+phone.slice(-4);
+  m.barcode=makeMemberBarcode(m.id,phone);
   lsSave();
   closeModal('edit-member-modal');
   showNotif('تم تحديث بيانات: '+m.name,'success');
@@ -4838,6 +4847,8 @@ function viewMember(id){
   const m=members.find(x=>x.id===id);
   if(!m)return;
   _currentBarcodeId=id;
+  if(m.barcode && /[^\x20-\x7E]/.test(String(m.barcode))){ m.barcode=makeMemberBarcode(m.id,m.phone); lsSave(); }
+  if(m.phone && /[٠-٩۰-۹]/.test(m.phone)){ m.phone=_toLatinDigits(m.phone); lsSave(); }
   const bc=m.barcode||m.id;
   document.getElementById('bc-member-name').textContent=m.name;
   document.getElementById('bc-member-id').textContent=m.id+' — '+(priceNames[m.type]||m.type);
@@ -4873,7 +4884,10 @@ function viewMember(id){
       URL.revokeObjectURL(url);
     };
     img.src=url;
-  }catch(e){console.warn('barcode error',e);}
+  }catch(e){
+    console.warn('barcode error',e);
+    try{ m.barcode=String(m.id); JsBarcode('#member-barcode-svg',m.id,{format:'CODE128',width:2.5,height:90,displayValue:true,font:'Arial',fontSize:14,margin:8,background:'#ffffff',lineColor:'#000000'}); const svg2=document.getElementById('member-barcode-svg'),cv=document.getElementById('barcode-canvas'),im=new Image(),u=URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(svg2)],{type:'image/svg+xml'})); im.onload=function(){cv.width=im.width;cv.height=im.height;const c=cv.getContext('2d');c.fillStyle='#fff';c.fillRect(0,0,cv.width,cv.height);c.drawImage(im,0,0);URL.revokeObjectURL(u);}; im.src=u; lsSave(); }catch(e2){console.warn('barcode fallback error',e2);}
+  }
   document.getElementById('wa-steps').style.display='none';
   openModal('member-barcode-modal');
 }
