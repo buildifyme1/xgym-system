@@ -880,6 +880,8 @@ button,.btn,.nav-item,.topbar-btn,.bn-item,.stat-card{touch-action:manipulation}
 
   /* إشعارات وبحث وتسجيل دخول */
   .notif-toast{left:12px!important;right:12px!important;bottom:calc(86px + env(safe-area-inset-bottom,0px))!important;max-width:none!important}
+  .notif-toast{pointer-events:none}
+  .notif-toast.show{pointer-events:auto}
   .gsearch-overlay{padding-top:calc(env(safe-area-inset-top,0px) + 12px)!important}
   .gsearch-results{max-height:62vh}
   .login-screen{overflow-y:auto;padding:calc(16px + env(safe-area-inset-top,0px)) 0 16px}
@@ -904,6 +906,13 @@ button,.btn,.nav-item,.topbar-btn,.bn-item,.stat-card{touch-action:manipulation}
   table.m-cards td[data-label="اسم العضو"],table.m-cards td[data-label="الاسم"],table.m-cards td[data-label="العضو"]{grid-column:1/-1;font-weight:700;font-size:14px;border-bottom:1px dashed var(--border);padding-bottom:8px;margin-bottom:2px}
   table.m-cards td::before{font-size:10.5px}
 }
+
+@media(max-width:768px){
+  .sidebar{visibility:hidden;pointer-events:none;transition:right .3s,visibility 0s linear .3s,box-shadow .3s!important}
+  .sidebar.mobile-open{visibility:visible;pointer-events:auto;transition:right .3s,visibility 0s,box-shadow .3s!important}
+  .bottom-nav{pointer-events:auto;transform:translateZ(0);-webkit-transform:translateZ(0)}
+  .bn-item{position:relative;z-index:1;-webkit-appearance:none;appearance:none}
+}
 </style>
 </head>
 <body>
@@ -912,11 +921,11 @@ button,.btn,.nav-item,.topbar-btn,.bn-item,.stat-card{touch-action:manipulation}
 <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeMobileMenu()"></div>
 <button class="mob-menu-btn" onclick="toggleMobileMenu()"><i class="fas fa-bars"></i></button>
 <nav class="bottom-nav" id="bottom-nav" aria-label="التنقل الرئيسي">
-  <button class="bn-item admin-only" data-page="dashboard" onclick="showPage('dashboard')"><i class="fas fa-chart-line"></i><span>الرئيسية</span></button>
-  <button class="bn-item" data-page="attendance" onclick="showPage('attendance')"><i class="fas fa-qrcode"></i><span>الحضور</span></button>
-  <button class="bn-item recep-only" data-page="attendance-record" onclick="showPage('attendance-record')"><i class="fas fa-clipboard-list"></i><span>السجل</span></button>
-  <button class="bn-item" data-page="members" onclick="showPage('members')"><i class="fas fa-users"></i><span>الأعضاء</span></button>
-  <button class="bn-item admin-only" data-page="finance" onclick="showPage('finance')"><i class="fas fa-wallet"></i><span>المالية</span></button>
+  <button class="bn-item admin-only" data-page="dashboard" onclick="bnGo('dashboard')"><i class="fas fa-chart-line"></i><span>الرئيسية</span></button>
+  <button class="bn-item" data-page="attendance" onclick="bnGo('attendance')"><i class="fas fa-qrcode"></i><span>الحضور</span></button>
+  <button class="bn-item recep-only" data-page="attendance-record" onclick="bnGo('attendance-record')"><i class="fas fa-clipboard-list"></i><span>السجل</span></button>
+  <button class="bn-item" data-page="members" onclick="bnGo('members')"><i class="fas fa-users"></i><span>الأعضاء</span></button>
+  <button class="bn-item admin-only" data-page="finance" onclick="bnGo('finance')"><i class="fas fa-wallet"></i><span>المالية</span></button>
   <button class="bn-item" data-page="more" onclick="toggleMobileMenu()"><i class="fas fa-bars"></i><span>المزيد</span></button>
 </nav>
 <div class="ptr" id="ptr"><i class="fas fa-arrow-down"></i><span>اسحب للتحديث</span></div>
@@ -5084,7 +5093,10 @@ function _barcodeCodeToChar(e){
   if(numpadMap[code])return numpadMap[code];
   if(/^Key[A-Z]$/.test(code)){
     const letter=code.slice(3);
-    return shift?letter:letter.toLowerCase();
+    // e.key بيعكس الحالة الفعلية (Shift/CapsLock) لو اللغة إنجليزي؛ لو اللغة عربي نحسبها من Shift + CapsLock
+    if(typeof e.key==='string'&&/^[A-Za-z]$/.test(e.key))return e.key;
+    const caps=!!(e.getModifierState&&e.getModifierState('CapsLock'));
+    return (shift!==caps)?letter:letter.toLowerCase();
   }
   const symbolMap={Minus:'-',Equal:'=',BracketLeft:'[',BracketRight:']',Semicolon:';',Quote:"'",Backslash:'\\',Comma:',',Period:'.',Slash:'/',Backquote:'`',Space:' '};
   const symbolShiftMap={Minus:'_',Equal:'+',BracketLeft:'{',BracketRight:'}',Semicolon:':',Quote:'"',Backslash:'|',Comma:'<',Period:'>',Slash:'?',Backquote:'~',Space:' '};
@@ -5101,6 +5113,7 @@ function _initBarcodeRawCapture(){
   inp.addEventListener('keydown',function(e){
     if(e.key==='Enter'){resetBarcodeRawBuffer();return;} // الإرسال نفسه بيتعامل معاه onkeydown الأصلي
     if(e.ctrlKey||e.altKey||e.metaKey)return; // اختصارات المتصفح تمر عادي
+    if(_barcodeRawBuffer!==inp.value)_barcodeRawBuffer=inp.value; // مزامنة لو الحقل اتمسح/اتعدل من برا
     if(e.key==='Backspace'){
       e.preventDefault();
       _barcodeRawBuffer=_barcodeRawBuffer.slice(0,-1);
@@ -5166,12 +5179,58 @@ function selectManualMember(id){
   _recordAttendance(m);
 }
 
+// تنظيف القيمة اللي جاية من القارئ: أرقام عربية → إنجليزي، شيل رموز مخفية/أسطر جديدة
+function _normBarcode(v){
+  return String(v==null?'':v)
+    .replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d))
+    .replace(/[۰-۹]/g,d=>'۰۱۲۳۴۵۶۷۸۹'.indexOf(d))
+    .replace(/[\u200b-\u200f\u202a-\u202e\ufeff\r\n\t]/g,'')
+    .trim();
+}
+// تحويل ما بيطلع من لوحة المفاتيح العربية (Arabic 101) لحروف الكيبورد الإنجليزي — لو القارئ بعت الحروف بشكلها العربي
+const _AR2LAT={'ض':'q','ص':'w','ث':'e','ق':'r','ف':'t','غ':'y','ع':'u','ه':'i','خ':'o','ح':'p','ش':'a','س':'s','ي':'d','ب':'f','ل':'g','ا':'h','ت':'j','ن':'k','م':'l','ك':';','ط':"'",'ئ':'z','ء':'x','ؤ':'c','ر':'v','ى':'n','ة':'m','و':',','ز':'.','ظ':'/','ذ':'`',
+  'أ':'h','إ':'y','آ':'n','ی':'d','ک':'k','\u064E':'q','\u064B':'w','\u064F':'e','\u064C':'r','\u0650':'a','\u064D':'s','\u0652':'x','\u0640':'j','،':'k','؛':'p','÷':'i','×':'o','\u2018':'u','\u2019':'m'};
+const _AR_RE=/[\u0600-\u06FF\u2018\u2019\u00F7\u00D7]/;
+function _arCandidates(str){
+  const conv=t=>t.replace(_AR_RE_G,c=>_AR2LAT[c]!==undefined?_AR2LAT[c]:c);
+  // "لا" ممكن تكون مفتاح B أو مفتاحين G+H — نجرب الاحتمالين
+  const withLig=str.replace(/لا|لآ/g,'b').replace(/لأ/g,'g').replace(/لإ/g,'t');
+  return [conv(withLig),conv(str)];
+}
+const _AR_RE_G=/[\u0600-\u06FF\u2018\u2019\u00F7\u00D7]/g;
+// بحث العضو: باركود/رقم عضوية (بدون حساسية لحالة الحروف) ← أرقام الباركود فقط (لو لغة الكيبورد بوّظت الحروف) ← الاسم (لو متاح وفيه نتيجة واحدة بس)
+function _findMemberByCode(raw,allowName){
+  const v=_normBarcode(raw);
+  if(!v)return {m:null};
+  const cands=[v];
+  if(_AR_RE.test(v))_arCandidates(v).forEach(c=>{if(cands.indexOf(c)<0)cands.push(c);});
+  let m=null;
+  for(const c of cands){
+    const up=c.toUpperCase();
+    m=members.find(x=>(x.barcode&&String(x.barcode).toUpperCase()===up)||String(x.id).toUpperCase()===up||String(x.id).replace('XG-','')===c);
+    if(m)break;
+  }
+  if(!m){
+    const dg=v.replace(/\D/g,'');
+    if(dg.length>=6)m=members.find(x=>x.barcode&&String(x.barcode).replace(/\D/g,'')===dg);
+  }
+  if(m)return {m};
+  if(allowName){
+    const list=members.filter(x=>x.name&&x.name.includes(v));
+    if(list.length===1)return {m:list[0]};
+    if(list.length>1)return {m:null,ambiguous:list.length};
+  }
+  return {m:null};
+}
+
 function scanManual(){
-  const val=(document.getElementById('barcode-input-manual')?.value||'').trim();
+  const val=_normBarcode(document.getElementById('barcode-input-manual')?.value);
   if(!val)return;
   if(_isDuplicateScan('M:'+val))return;
-  const m=members.find(x=>x.barcode===val||x.id===val||x.id.replace('XG-','')===val||x.name.includes(val));
-  if(m){_recordAttendance(m);document.getElementById('barcode-input-manual').value='';}
+  updateMemberDays();
+  const r=_findMemberByCode(val,true);
+  if(r.m){_recordAttendance(r.m);document.getElementById('barcode-input-manual').value='';}
+  else if(r.ambiguous)showNotif('فيه '+r.ambiguous+' أعضاء بنفس الاسم — اختار من القائمة أو اكتب رقم العضوية','warning');
   else showNotif('لم يُعثر على عضو: '+val,'warning');
 }
 
@@ -5185,14 +5244,19 @@ function _isDuplicateScan(code){
 }
 
 // موّحد مسح الباركود للقارئ الخارجي
-function scanMember(){
-  const val=(document.getElementById('barcode-input')?.value||'').trim();
+function scanMember(fromAuto){
+  const el=document.getElementById('barcode-input');
+  const val=_normBarcode(el?el.value:'');
   if(!val)return;
-  document.getElementById('barcode-input').value='';
+  el.value='';
   resetBarcodeRawBuffer();
+  const ind=document.getElementById('barcode-typing-indicator');if(ind)ind.style.display='none';
   if(_isDuplicateScan(val))return;
-  const m=members.find(x=>x.barcode===val||x.id===val||x.id.replace('XG-','')===val||x.name.includes(val));
-  if(m){playBeep('success');_recordAttendance(m);}
+  updateMemberDays();
+  // البحث بالاسم بس لما الموظف يضغط Enter بنفسه، مش في التسجيل التلقائي
+  const r=_findMemberByCode(val,!fromAuto);
+  if(r.m){playBeep('success');_recordAttendance(r.m);}
+  else if(r.ambiguous){playBeep('error');showNotif('فيه '+r.ambiguous+' أعضاء بنفس الاسم — استخدم الباركود أو رقم العضوية','warning');}
   else{playBeep('error');showNotif('لم يُعثر على عضو: '+val,'warning');}
 }
 
@@ -5857,10 +5921,11 @@ function onBarcodeInputChange(val){
   if(indicator)indicator.style.display=val?'block':'none';
   // إذا كان الباركود اكتمل (8+ خانات) يتسجل تلقائياً بعد توقف قصير
   clearTimeout(window._bcAutoTimeout);
-  if(val&&val.length>=6){
+  // تسجيل تلقائي فقط لو القيمة شكلها باركود (حروف إنجليزي/أرقام/شرطة) — عشان كتابة اسم بالبطيء ما تتسجلش بالغلط
+  if(val&&val.length>=6&&(/^[A-Za-z0-9\-]+$/.test(_normBarcode(val))||_findMemberByCode(val,false).m)){
     window._bcAutoTimeout=setTimeout(()=>{
       if(document.getElementById('barcode-input')?.value===val){
-        scanMember();
+        scanMember(true);
       }
     },400);
   }
@@ -6442,6 +6507,18 @@ if('serviceWorker' in navigator){
     };
   }
   syncBottomNav('dashboard');
+
+  window.bnGo=function(p){
+    try{showPage(p);}
+    catch(e){
+      console.error('bnGo/showPage error:',e);
+      try{
+        document.querySelectorAll('.content').forEach(function(c){c.classList.remove('active');});
+        var el=document.getElementById('page-'+p);if(el)el.classList.add('active');
+      }catch(_){}
+    }
+    try{syncBottomNav(p);if(typeof closeMobileMenu==='function')closeMobileMenu();window.scrollTo(0,0);}catch(_){}
+  };
 
   var sb=document.querySelector('.sidebar');
   if(sb){
